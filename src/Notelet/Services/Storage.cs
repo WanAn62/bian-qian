@@ -91,18 +91,19 @@ public class NotesRepo
         ns.Add(new Note
         {
             ColorKey = "sky",
-            Text = "拖进拖出\n\n· 把 .txt / .md 文件拖进窗口，会变成一张便签\n· 把卡片拖到桌面或资源管理器，会导出成 .txt 文件\n· 复制一段文字后按 Ctrl+V，也能直接变成新便签",
+            Text = "拖进拖出 · 随呼随用\n\n· 把 .txt / .md 文件拖进窗口，会变成一张便签\n· 把卡片拖到桌面或资源管理器，会导出成文件\n· 关闭窗口只是收到托盘，Ctrl+Alt+N 随时唤出\n· 点卡片上的 📌 图标，可以把便签贴成桌面磁贴",
         });
         ns.Add(new Note
         {
             ColorKey = "peach",
-            Text = "快捷键\n\nCtrl+N    新建便签\nCtrl+K    搜索\nCtrl+V    粘贴新建\n双击      编辑卡片\nCtrl+Enter / Esc   完成编辑",
+            IsMarkdown = true,
+            Text = "Markdown 试试看\n\n## 待办清单\n- [x] 把卡片拖出窗口导出文件\n- [ ] 双击卡片，点「预览」看渲染效果\n- [ ] 点 MD 按钮切换 Markdown 模式\n- [ ] 点 📌 把这张卡片贴在桌面上\n\n> 提示：预览里可以直接点击任务框勾选。\n\n**粗体**、*斜体*、~~删除线~~、`行内代码` 都支持。",
         });
         ns.Add(new Note
         {
             ColorKey = "cream",
             Pinned = true,
-            Text = "试着把我拖出去 →\n\n按住这张卡片拖到桌面，\n就会得到一个 .txt 文件。\n\n删除的便签会进回收站，\n随时可以恢复。",
+            Text = "快捷键\n\nCtrl+N    新建便签\nCtrl+K    搜索\nCtrl+V    粘贴新建\nCtrl+Alt+N    呼出 / 隐藏窗口\n双击      编辑卡片\nCtrl+Enter / Esc   完成编辑\n\n试着按住我拖到桌面 →\n就会得到一个文件。\n\n删除的便签会进回收站，\n随时可以恢复。",
         });
     }
 
@@ -168,7 +169,8 @@ public static class TempExport
             sb.Append(Array.IndexOf(invalid, ch) >= 0 ? '_' : ch);
             if (sb.Length >= 24) break;
         }
-        return $"简签-{sb}-{DateTime.Now:HHmmss}.txt";
+        var ext = n.IsMarkdown ? ".md" : ".txt";
+        return $"简签-{sb}-{DateTime.Now:HHmmss}{ext}";
     }
 
     public static void Cleanup()

@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:m="clr-namespace:Notelet.Models"
         xmlns:local="clr-namespace:Notelet"
+        xmlns:svc="clr-namespace:Notelet.Services"
         Title="简签 Notelet" Width="1000" Height="680" MinWidth="620" MinHeight="440"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource Bg.Brush}"
@@ -22,77 +23,6 @@
     <Window.Resources>
         <local:NoteCardConverter x:Key="NoteConv"/>
 
-        <!-- 图标按钮（顶栏） -->
-        <Style x:Key="IconBtn" TargetType="Button">
-            <Setter Property="Width" Value="34"/>
-            <Setter Property="Height" Value="34"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource Text.Brush}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="9">
-                            <TextBlock Text="{TemplateBinding Content}"
-                                       FontFamily="{DynamicResource IconFont.FontFamily}"
-                                       FontSize="{TemplateBinding FontSize}"
-                                       Foreground="{TemplateBinding Foreground}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource Field.Brush}"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="bd" Property="Opacity" Value="0.7"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- 关闭按钮（悬停变红） -->
-        <Style x:Key="CloseBtn" TargetType="Button" BasedOn="{StaticResource IconBtn}">
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#E81123"/>
-                    <Setter Property="Foreground" Value="White"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- 可切换图标按钮（窗口置顶） -->
-        <Style x:Key="IconToggle" TargetType="ToggleButton">
-            <Setter Property="Width" Value="34"/>
-            <Setter Property="Height" Value="34"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource Text.Brush}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="9">
-                            <TextBlock Text="{TemplateBinding Content}"
-                                       FontFamily="{DynamicResource IconFont.FontFamily}"
-                                       FontSize="{TemplateBinding FontSize}"
-                                       Foreground="{TemplateBinding Foreground}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource Field.Brush}"/>
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
-                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource Field.Brush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <!-- 卡片悬浮小按钮：悬停卡片时出现 -->
         <Style x:Key="CardBtn" TargetType="Button" BasedOn="{StaticResource IconBtn}">
             <Setter Property="Width" Value="24"/>
@@ -106,28 +36,13 @@
             </Style.Triggers>
         </Style>
 
-        <!-- 菜单/链接按钮 -->
-        <Style x:Key="FlatBtn" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource Text.Brush}"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Padding" Value="12,8"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="8"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource Field.Brush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+        <!-- 编辑态小芯片按钮（常显） -->
+        <Style x:Key="EditChip" TargetType="Button" BasedOn="{StaticResource IconBtn}">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
         </Style>
     </Window.Resources>
 
@@ -216,7 +131,8 @@
                                         Background="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=bg}"
                                         BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
                                         Margin="0,0,14,14" Cursor="Hand"
-                                        MouseLeftButtonDown="Card_MouseDown" MouseMove="Card_MouseMove">
+                                        MouseLeftButtonDown="Card_MouseDown" MouseMove="Card_MouseMove"
+                                        LostKeyboardFocus="Card_LostFocus">
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Style.Triggers>
@@ -243,7 +159,8 @@
                                                        FontSize="{DynamicResource BaseFontSize.Double}"
                                                        TextWrapping="Wrap" MaxHeight="{DynamicResource BodyMax.Double}"
                                                        TextTrimming="CharacterEllipsis"
-                                                       Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=sub}"/>
+                                                       Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=sub}"
+                                                       svc:MarkdownBody.Enable="True"/>
                                             <Grid Margin="0,10,0,0">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
@@ -253,6 +170,17 @@
                                                            VerticalAlignment="Center"
                                                            Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=sub}"/>
                                                 <StackPanel x:Name="NormalOps" Grid.Column="1" Orientation="Horizontal">
+                                                    <Button Content="MD" FontFamily="Microsoft YaHei UI" Click="MdBtn_Click" ToolTip="以 Markdown 渲染">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource CardBtn}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsMarkdown}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
                                                     <Button Content="&#xE718;" Click="PinBtn_Click" ToolTip="置顶">
                                                         <Button.Style>
                                                             <Style TargetType="Button" BasedOn="{StaticResource CardBtn}">
@@ -266,6 +194,17 @@
                                                     </Button>
                                                     <Button Style="{StaticResource CardBtn}" Content="&#xE790;" Click="ColorBtn_Click" ToolTip="颜色"/>
                                                     <Button Style="{StaticResource CardBtn}" Content="&#xE74D;" Click="DelBtn_Click" ToolTip="删除"/>
+                                                    <Button Content="&#xE842;" Click="TileBtn_Click" ToolTip="磁贴：贴在桌面速览" FontSize="12">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource CardBtn}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsTiled}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
                                                 </StackPanel>
                                                 <StackPanel x:Name="TrashOps" Grid.Column="1" Orientation="Horizontal" Visibility="Collapsed">
                                                     <Button Style="{StaticResource CardBtn}" Content="&#xE7A7;" Click="RestoreBtn_Click" ToolTip="恢复"/>
@@ -284,10 +223,55 @@
                                                      Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}"
                                                      CaretBrush="{DynamicResource Accent.Brush}"
                                                      SelectionBrush="{DynamicResource Accent.Brush}"
-                                                     KeyDown="Editor_KeyDown" LostKeyboardFocus="Editor_LostFocus"/>
-                                            <TextBlock Text="Ctrl+Enter 完成 · Esc 关闭 · 首行为标题" FontSize="10.5"
-                                                       Foreground="{DynamicResource Sub.Brush}"
-                                                       HorizontalAlignment="Right" Margin="0,6,0,0"/>
+                                                     KeyDown="Editor_KeyDown"/>
+                                            <RichTextBox x:Name="PreviewBox"
+                                                         IsReadOnly="True" IsDocumentEnabled="True"
+                                                         BorderThickness="0" Background="Transparent" Padding="0"
+                                                         MinHeight="110" MaxHeight="430" VerticalScrollBarVisibility="Auto"
+                                                         FontSize="{DynamicResource BaseFontSize.Double}"
+                                                         Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}"
+                                                         Visibility="Collapsed"/>
+                                            <DockPanel Margin="0,6,0,0">
+                                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                                                    <Button Content="MD" FontFamily="Microsoft YaHei UI" Click="MdBtn_Click" ToolTip="以 Markdown 渲染">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource EditChip}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsMarkdown}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                    <Button Content="预览" Click="PreviewBtn_Click" ToolTip="切换 编辑 / 预览" Margin="6,0,0,0">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource EditChip}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
+                                                                        <Setter Property="Content" Value="编辑"/>
+                                                                        <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
+                                                </StackPanel>
+                                                <TextBlock FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"
+                                                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Text="Ctrl+Enter 完成 · Esc 关闭 · 首行为标题">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
+                                                                    <Setter Property="Text" Value="预览中：点击任务框可直接勾选"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DockPanel>
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
@@ -295,6 +279,10 @@
                                     <DataTrigger Binding="{Binding IsEditing}" Value="True">
                                         <Setter TargetName="ViewPart" Property="Visibility" Value="Collapsed"/>
                                         <Setter TargetName="EditPart" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
+                                        <Setter TargetName="Editor" Property="Visibility" Value="Collapsed"/>
+                                        <Setter TargetName="PreviewBox" Property="Visibility" Value="Visible"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding TrashMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                         <Setter TargetName="NormalOps" Property="Visibility" Value="Collapsed"/>

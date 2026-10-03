@@ -9,8 +9,19 @@ public class Note : INotifyPropertyChanged
     string _text = "";
     bool _pinned;
     bool _editing;
+    bool _previewing;
+    bool _isMarkdown;
+    bool _tiled;
+    bool _deleted;
 
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
+
+    /// <summary>是否按 Markdown 渲染。</summary>
+    public bool IsMarkdown
+    {
+        get => _isMarkdown;
+        set { if (_isMarkdown == value) return; _isMarkdown = value; OnP(); }
+    }
 
     public string Text
     {
@@ -33,13 +44,33 @@ public class Note : INotifyPropertyChanged
         set { if (_pinned == value) return; _pinned = value; OnP(); }
     }
 
-    public bool Deleted { get; set; }
+    public bool Deleted
+    {
+        get => _deleted;
+        set { if (_deleted == value) return; _deleted = value; OnP(); }
+    }
 
     [JsonIgnore]
     public bool IsEditing
     {
         get => _editing;
         set { if (_editing == value) return; _editing = value; OnP(); }
+    }
+
+    /// <summary>编辑中的卡片是否处于预览态（仅运行时）。</summary>
+    [JsonIgnore]
+    public bool IsPreviewing
+    {
+        get => _previewing;
+        set { if (_previewing == value) return; _previewing = value; OnP(); }
+    }
+
+    /// <summary>是否已打开磁贴窗口（仅运行时）。</summary>
+    [JsonIgnore]
+    public bool IsTiled
+    {
+        get => _tiled;
+        set { if (_tiled == value) return; _tiled = value; OnP(); }
     }
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;

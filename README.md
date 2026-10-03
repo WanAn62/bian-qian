@@ -12,8 +12,11 @@
 ## ✨ 特性
 
 - **卡片便签墙** —— 双击空白处 / `Ctrl+N` 新建；双击卡片直接编辑，首行自动作为标题
+- **Markdown** —— 卡片上的 **MD** 按钮开启后，正文按 Markdown 渲染（标题/列表/任务清单/引用/代码块/粗体/斜体/删除线/行内代码/链接）；编辑中可一键切换「预览」，预览里**直接点击任务框勾选**，自动回写原文
 - **拖进来** —— 把 `.txt` / `.md` / `.log` / `.csv` 等文本文件拖进窗口，即变成一张便签（自动识别 UTF-8 / GB18030 编码）；复制文字后 `Ctrl+V` 也能直接变成新便签
-- **拖出去** —— 按住卡片拖到桌面或资源管理器，即导出为 `.txt` 文件
+- **拖出去** —— 按住卡片拖到桌面或资源管理器，即导出为文件（Markdown 便签导出为 `.md`，其余为 `.txt`）
+- **磁贴模式** —— 点卡片上的图钉图标，把便签贴在桌面上随时速览/复制；跟随主题与卡片配色，便签编辑实时刷新、删除自动收起
+- **托盘随呼随用** —— 关闭窗口自动最小化到托盘，全局热键 `Ctrl+Alt+N` 随时唤出/隐藏
 - **随心美化** —— 6 套预设主题（暖纸 / 墨夜 / 薄荷 / 蜜桃 / 云母 / 亚克力夜），支持自定义窗口底色、卡片底色、强调色、文字色、圆角、字号、卡片宽度、字体，并可用 **Windows 11 原生云母 / 亚克力毛玻璃**背景；主题可导出 / 导入（JSON）
 - **10 色便签色签** —— 每张卡片可单独配色，深浅底色自动适配文字颜色
 - **实用细节** —— 置顶便签、窗口置顶、回收站（误删可恢复）、实时搜索（`Ctrl+K`）、自动保存 + 启动时自动备份（保留最近 10 份）、单实例运行
@@ -49,6 +52,7 @@ dotnet publish src/Notelet/Notelet.csproj -c Release -r win-x64 --self-contained
 | `Ctrl+N` | 新建便签 |
 | `Ctrl+K` | 搜索 |
 | `Ctrl+V` | 粘贴文字直接生成新便签 |
+| `Ctrl+Alt+N` | 全局呼出 / 隐藏窗口（系统级热键） |
 | 双击卡片 | 编辑 |
 | `Ctrl+Enter` / `Esc` | 完成编辑 |
 | 双击空白处 | 新建便签 |
@@ -67,14 +71,13 @@ C# / .NET 9 WPF，无任何第三方依赖。窗口背景使用 DWM 系统级云
 
 ## 🗺 Roadmap
 
-- [ ] Markdown 渲染与待办复选框
-- [ ] 托盘图标与最小化到托盘
-- [ ] 便签独立置顶浮窗模式
+- [ ] 全局热键自定义
+- [ ] 磁贴透明度与尺寸调节
 - [ ] 多语言（English UI）
 
 ## English
 
-**Notelet** is a small & beautiful sticky-notes app for Windows: drag text files in to import, drag cards out to export as `.txt`, fully customizable themes (including native Windows 11 Mica / Acrylic backdrop), pin, trash, instant search, autosave with backups. Built with C# / .NET 9 WPF, zero dependencies, MIT licensed.
+**Notelet** is a small & beautiful sticky-notes app for Windows: Markdown rendering with clickable task checkboxes, drag files in to import, drag cards out to export as `.txt` / `.md`, desktop tile mode, tray + global hotkey, fully customizable themes with native Windows 11 Mica / Acrylic backdrop, pin, trash, instant search, autosave with backups. Built with C# / .NET 9 WPF, zero dependencies, MIT licensed.
 
 ## License
 

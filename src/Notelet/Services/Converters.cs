@@ -18,18 +18,39 @@ public class NoteCardConverter : IValueConverter
     {
         var key = value as string ?? "auto";
         var mode = parameter as string ?? "bg";
+        return mode switch
+        {
+            "fg" => FgBrushFor(key),
+            "sub" => SubBrushFor(key),
+            _ => BgBrushFor(key),
+        };
+    }
+
+    public static SolidColorBrush BgBrushFor(string key)
+    {
         var fallback = ThemeService.Current?.Card ?? "#FFFFFF";
         var hex = Palette.BgOf(key, fallback);
+        return Cached($"{ThemeService.Version}|{key}|bg", Palette.FromHex(hex));
+    }
 
-        var cacheKey = $"{ThemeService.Version}|{key}|{mode}";
+    public static SolidColorBrush FgBrushFor(string key)
+    {
+        var hex = Palette.BgOf(key, ThemeService.Current?.Card ?? "#FFFFFF");
+        return Cached($"{ThemeService.Version}|{key}|fg",
+            Palette.IsDarkBg(hex) ? Color.FromRgb(244, 242, 238) : Color.FromRgb(58, 56, 51));
+    }
+
+    public static SolidColorBrush SubBrushFor(string key)
+    {
+        var hex = Palette.BgOf(key, ThemeService.Current?.Card ?? "#FFFFFF");
+        return Cached($"{ThemeService.Version}|{key}|sub",
+            Palette.IsDarkBg(hex) ? Color.FromArgb(168, 244, 242, 238) : Color.FromArgb(168, 58, 56, 51));
+    }
+
+    static SolidColorBrush Cached(string cacheKey, Color c)
+    {
         if (_cache.TryGetValue(cacheKey, out var b)) return b;
-
-        b = mode switch
-        {
-            "fg" => Solid(Palette.IsDarkBg(hex) ? Color.FromRgb(244, 242, 238) : Color.FromRgb(58, 56, 51)),
-            "sub" => Solid(Palette.IsDarkBg(hex) ? Color.FromArgb(168, 244, 242, 238) : Color.FromArgb(168, 58, 56, 51)),
-            _ => Solid(Palette.FromHex(hex)),
-        };
+        b = Solid(c);
         _cache[cacheKey] = b;
         return b;
     }

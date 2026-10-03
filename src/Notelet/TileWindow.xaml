@@ -1,0 +1,46 @@
+<Window x:Class="Notelet.TileWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="磁贴" Width="284" SizeToContent="Height"
+        ShowInTaskbar="False" WindowStartupLocation="Manual"
+        ResizeMode="NoResize"
+        Background="{DynamicResource Card.Brush}"
+        Foreground="{DynamicResource Text.Brush}"
+        BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="36" ResizeBorderThickness="0" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="36"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 头部：标题 + 操作 -->
+        <Grid Grid.Row="0" WindowChrome.IsHitTestVisibleInChrome="True">
+            <TextBlock x:Name="TileTitle" Margin="12,0,0,0" FontSize="12.5" FontWeight="SemiBold"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" IsHitTestVisible="False"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="&#xE8C8;" Style="{StaticResource IconBtn}" Width="28" Height="28" FontSize="12"
+                        Click="CopyBtn_Click" ToolTip="复制全文"/>
+                <Button x:Name="TopBtn" Content="&#xE718;" Style="{StaticResource IconBtn}" Width="28" Height="28" FontSize="12"
+                        Click="TopBtn_Click" ToolTip="窗口置顶"/>
+                <Button Content="&#xE8BB;" Style="{StaticResource CloseBtn}" Width="28" Height="28" FontSize="12"
+                        Click="CloseBtn_Click" ToolTip="关闭磁贴"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- 正文 -->
+        <Grid x:Name="BodyHost" Grid.Row="1" Margin="12,2,12,4"/>
+
+        <!-- 底部 -->
+        <Grid Grid.Row="2" Margin="12,0,12,8">
+            <TextBlock x:Name="TileDate" FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"/>
+            <TextBlock Text="双击标题栏拖动 · 磁贴模式" FontSize="10" Foreground="{DynamicResource Sub.Brush}"
+                       Opacity="0.7" HorizontalAlignment="Right" IsHitTestVisible="False"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -29,6 +30,23 @@ public partial class MainWindow : Window
 
     Point? _downPos;
     Note? _dragCandidate;
+
+    // 托盘 / 全局热键
+    WinForms.NotifyIcon? _tray;
+    bool _exitRequested;
+    bool _tipShown;
+    const int HotKeyId = 0xB101;
+    const int WM_HOTKEY = 0x0312;
+    const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2;
+
+    // 编辑预览态：note -> (文本变化回调, 预览控件)
+    readonly Dictionary<Note, (PropertyChangedEventHandler Handler, RichTextBox Box)> _previews = new();
+
+    [DllImport("user32.dll")]
+    static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+
+    [DllImport("user32.dll")]
+    static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
     public ListCollectionView View { get; }
     public static readonly DependencyProperty TrashModeProperty = DependencyProperty.Register(
@@ -64,13 +82,84 @@ public partial class MainWindow : Window
         Topmost = _settings.Topmost;
         PinWinBtn.IsChecked = _settings.Topmost;
 
-        SourceInitialized += (_, __) => ThemeService.ApplyBackdrop(this);
+        SourceInitialized += (_, __) =>
+        {
+            ThemeService.ApplyBackdrop(this);
+            var hwnd = new WindowInteropHelper(this).Handle;
+            // 全局热键 Ctrl+Alt+N：呼出 / 隐藏
+            RegisterHotKey(hwnd, HotKeyId, MOD_CONTROL | MOD_ALT, 0x4E);
+            HwndSource.FromHwnd(hwnd)?.AddHook(WndProc);
+        };
 
         _settingsSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
         _settingsSaveTimer.Tick += (_, __) => { _settingsSaveTimer.Stop(); SettingsRepo.Save(_settings); };
 
         RefreshView();
         SettingsRepo.Save(_settings);
+
+        InitTray();
+    }
+
+    // ───────────────────────── 托盘 / 全局热键（随呼随用） ─────────────────────────
+
+    void InitTray()
+    {
+        try
+        {
+            var icon = Environment.ProcessPath is string exe
+                ? System.Drawing.Icon.ExtractAssociatedIcon(exe) : null;
+            _tray = new WinForms.NotifyIcon
+            {
+                Icon = icon,
+                Text = "简签 Notelet",
+                Visible = true,
+            };
+
+            var menu = new WinForms.ContextMenuStrip();
+            menu.Items.Add("打开 简签", null, (_, __) => ShowMain());
+            menu.Items.Add("新建便签", null, (_, __) => { ShowMain(); NewNote(); });
+            menu.Items.Add(new WinForms.ToolStripSeparator());
+            var trayItem = new WinForms.ToolStripMenuItem("关闭时最小化到托盘")
+            {
+                Checked = _settings.CloseToTray,
+            };
+            trayItem.Click += (_, __) =>
+            {
+                _settings.CloseToTray = !_settings.CloseToTray;
+                trayItem.Checked = _settings.CloseToTray;
+                SaveSettingsSoon();
+            };
+            menu.Items.Add(trayItem);
+            menu.Items.Add(new WinForms.ToolStripSeparator());
+            menu.Items.Add("退出", null, (_, __) => ExitApp());
+            _tray.ContextMenuStrip = menu;
+            _tray.DoubleClick += (_, __) => ShowMain();
+        }
+        catch { /* 托盘不可用时静默降级 */ }
+    }
+
+    IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_HOTKEY && wParam.ToInt32() == HotKeyId)
+        {
+            if (IsVisible) Hide();
+            else ShowMain();
+            handled = true;
+        }
+        return IntPtr.Zero;
+    }
+
+    void ShowMain()
+    {
+        Show();
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        Activate();
+    }
+
+    void ExitApp()
+    {
+        _exitRequested = true;
+        Close();
     }
 
     // ───────────────────────── 排序 / 过滤 / 状态 ─────────────────────────
@@ -139,6 +228,8 @@ public partial class MainWindow : Window
     void BeginEdit(Note n, Border card)
     {
         if (n.Deleted || TrashMode) return;
+        n.IsPreviewing = false;
+        SetPreview(n, false);
         n.IsEditing = true;
         Dispatcher.BeginInvoke(DispatcherPriority.Input, () => FocusEditor(n));
     }
@@ -146,6 +237,8 @@ public partial class MainWindow : Window
     void EndEdit(Note n)
     {
         if (!n.IsEditing) return;
+        SetPreview(n, false);
+        n.IsPreviewing = false;
         n.IsEditing = false;
         n.UpdatedAt = DateTime.Now;
         _repo.MarkDirty();
@@ -368,10 +461,83 @@ public partial class MainWindow : Window
         }
     }
 
-    void Editor_LostFocus(object sender, RoutedEventArgs e)
+    void Card_LostFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
-        if (sender is TextBox { DataContext: Note n } && n.IsEditing)
-            EndEdit(n);
+        // 焦点在卡片内部转移（如点击 MD/预览按钮）不结束编辑；真正离开卡片才提交
+        if (sender is not Border { DataContext: Note n } || !n.IsEditing) return;
+        var card = (Border)sender;
+        if (e.NewFocus is DependencyObject d && CardRootOf(d) == card) return;
+        EndEdit(n);
+    }
+
+    // ───────────────────────── Markdown / 预览 / 磁贴 ─────────────────────────
+
+    void MdBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not Note n) return;
+        n.IsMarkdown = !n.IsMarkdown;
+        _repo.MarkDirty();
+        if (n.IsPreviewing) RebuildPreviewCurrent(n);
+    }
+
+    void PreviewBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not Note n) return;
+        n.IsPreviewing = !n.IsPreviewing;
+        SetPreview(n, n.IsPreviewing);
+    }
+
+    void TileBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not Note n) return;
+        var existing = Application.Current.Windows.OfType<TileWindow>().FirstOrDefault(t => t.Note == n);
+        if (existing is not null) { existing.Activate(); return; }
+        var tile = new TileWindow(n);
+        n.IsTiled = true;
+        tile.Closed += (_, __) => n.IsTiled = false;
+        tile.Show();
+    }
+
+    static Border? CardRootOf(DependencyObject? d)
+    {
+        while (d is not null)
+        {
+            if (d is Border b && b.Name == "CardRoot") return b;
+            d = VisualTreeHelper.GetParent(d);
+        }
+        return null;
+    }
+
+    void SetPreview(Note n, bool on)
+    {
+        if (_previews.Remove(n, out var old))
+            n.PropertyChanged -= old.Handler;
+        if (!on) return;
+        PropertyChangedEventHandler h = (s, e) =>
+        {
+            if (e.PropertyName == nameof(Note.Text))
+                Dispatcher.BeginInvoke(() =>
+                {
+                    if (_previews.ContainsKey(n)) RebuildPreviewCurrent(n);
+                });
+        };
+        n.PropertyChanged += h;
+        _previews[n] = (h, null!);
+        RebuildPreviewCurrent(n);
+    }
+
+    /// <summary>卡片容器可能在任意 Refresh 后重建，因此每次都从当前可视树定位预览控件。</summary>
+    void RebuildPreviewCurrent(Note n)
+    {
+        if (CardsList.ItemContainerGenerator.ContainerFromItem(n) is not ContentPresenter cp) return;
+        if (FindDescendant<RichTextBox>(cp) is not RichTextBox box) return;
+        var fg = NoteCardConverter.FgBrushFor(n.ColorKey);
+        var sub = NoteCardConverter.SubBrushFor(n.ColorKey);
+        var accent = (Brush)Application.Current.Resources["Accent.Brush"];
+        var codeBg = (Brush)Application.Current.Resources["Field.Brush"];
+        var fs = (double)Application.Current.Resources["BaseFontSize.Double"];
+        box.Document = Markdown.FlowDoc(n, fg, sub, accent, codeBg, codeBg, fs);
+        _previews[n] = (_previews[n].Handler, box);
     }
 
     // ───────────────────────── 顶栏 ─────────────────────────
@@ -943,12 +1109,40 @@ public partial class MainWindow : Window
 
     void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        // 关闭到托盘（随呼随用）
+        if (!_exitRequested && _settings.CloseToTray)
+        {
+            e.Cancel = true;
+            Hide();
+            if (!_tipShown)
+            {
+                _tipShown = true;
+                try { _tray?.ShowBalloonTip(2000, "简签 Notelet", "已最小化到托盘 · Ctrl+Alt+N 随时唤出", WinForms.ToolTipIcon.Info); }
+                catch { }
+            }
+            return;
+        }
+
         foreach (var n in _repo.Items.Where(n => n.IsEditing).ToList())
         {
             n.IsEditing = false;
             n.UpdatedAt = DateTime.Now;
         }
         _repo.SaveNow();
+
+        try
+        {
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (hwnd != IntPtr.Zero) UnregisterHotKey(hwnd, HotKeyId);
+        }
+        catch { }
+        if (_tray is not null)
+        {
+            _tray.Visible = false;
+            _tray.Dispose();
+            _tray = null;
+        }
+        foreach (var t in Application.Current.Windows.OfType<TileWindow>().ToArray()) t.Close();
 
         _settings.WindowWidth = Width;
         _settings.WindowHeight = Height;
