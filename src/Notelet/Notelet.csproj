@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Notelet</RootNamespace>
+    <AssemblyName>Notelet</AssemblyName>
+    <Version>1.0.0</Version>
+    <Authors>WanAn62</Authors>
+    <Company>WanAn62</Company>
+    <AssemblyTitle>简签 Notelet</AssemblyTitle>
+    <Product>简签 Notelet</Product>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+</Project>

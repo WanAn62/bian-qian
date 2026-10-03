@@ -1,0 +1,185 @@
+using System.IO;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Windows.Threading;
+using Notelet.Models;
+
+namespace Notelet.Services;
+
+public static class Paths
+{
+    public static readonly string Root =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Notelet");
+    public static readonly string NotesFile = Path.Combine(Root, "notes.json");
+    public static readonly string SettingsFile = Path.Combine(Root, "settings.json");
+    public static readonly string BackupDir = Path.Combine(Root, "backups");
+
+    public static void Ensure()
+    {
+        Directory.CreateDirectory(Root);
+        Directory.CreateDirectory(BackupDir);
+    }
+}
+
+public static class Json
+{
+    public static readonly JsonSerializerOptions Opt = new()
+    {
+        WriteIndented = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
+    public static T? Load<T>(string path) where T : class
+    {
+        if (!File.Exists(path)) return null;
+        try { return JsonSerializer.Deserialize<T>(File.ReadAllText(path), Opt); }
+        catch { return null; }
+    }
+
+    public static void Save<T>(string path, T data)
+    {
+        var tmp = path + ".tmp";
+        File.WriteAllText(tmp, JsonSerializer.Serialize(data, Opt), new UTF8Encoding(false));
+        if (File.Exists(path)) File.Replace(tmp, path, null);
+        else File.Move(tmp, path);
+    }
+}
+
+public static class SettingsRepo
+{
+    public static AppSettings? Load() => Json.Load<AppSettings>(Paths.SettingsFile);
+    public static void Save(AppSettings s) { try { Json.Save(Paths.SettingsFile, s); } catch { } }
+}
+
+public class NotesRepo
+{
+    List<Note> _notes = new();
+    bool _dirty;
+    DispatcherTimer? _timer;
+    DateTime? _lastSaved;
+
+    public List<Note> Items => _notes;
+    public DateTime? LastSaved => _lastSaved;
+    public event Action? Saved;
+
+    public static NotesRepo LoadOrCreate()
+    {
+        Paths.Ensure();
+        var r = new NotesRepo();
+        var list = Json.Load<List<Note>>(Paths.NotesFile);
+        if (list is null)
+        {
+            Seed(r._notes);
+            r.SaveNow();
+        }
+        else
+        {
+            r._notes = list;
+        }
+        r.Backup();
+        return r;
+    }
+
+    static void Seed(List<Note> ns)
+    {
+        ns.Add(new Note
+        {
+            ColorKey = "mint",
+            Text = "欢迎使用 简签 Notelet\n\n这是一块小而美的桌面便签：\n· 双击卡片即可编辑，首行是标题\n· 数据只保存在你自己的电脑上\n· 点右上角的调色板按钮，可以换主题、调颜色",
+        });
+        ns.Add(new Note
+        {
+            ColorKey = "sky",
+            Text = "拖进拖出\n\n· 把 .txt / .md 文件拖进窗口，会变成一张便签\n· 把卡片拖到桌面或资源管理器，会导出成 .txt 文件\n· 复制一段文字后按 Ctrl+V，也能直接变成新便签",
+        });
+        ns.Add(new Note
+        {
+            ColorKey = "peach",
+            Text = "快捷键\n\nCtrl+N    新建便签\nCtrl+K    搜索\nCtrl+V    粘贴新建\n双击      编辑卡片\nCtrl+Enter / Esc   完成编辑",
+        });
+        ns.Add(new Note
+        {
+            ColorKey = "cream",
+            Pinned = true,
+            Text = "试着把我拖出去 →\n\n按住这张卡片拖到桌面，\n就会得到一个 .txt 文件。\n\n删除的便签会进回收站，\n随时可以恢复。",
+        });
+    }
+
+    void Backup()
+    {
+        try
+        {
+            if (_notes.Count == 0 || !File.Exists(Paths.NotesFile)) return;
+            var old = Directory.GetFiles(Paths.BackupDir, "notes-*.json")
+                               .OrderBy(f => f, StringComparer.Ordinal).ToArray();
+            if (old.Length >= 10) File.Delete(old[0]);
+            var path = Path.Combine(Paths.BackupDir, $"notes-{DateTime.Now:yyyyMMdd-HHmmss}.json");
+            File.Copy(Paths.NotesFile, path, overwrite: true);
+        }
+        catch { }
+    }
+
+    public void MarkDirty()
+    {
+        _dirty = true;
+        if (_timer is not null) return;
+        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
+        _timer.Tick += (_, __) =>
+        {
+            _timer.Stop();
+            if (_dirty) SaveNow();
+        };
+        _timer.Start();
+    }
+
+    public void SaveNow()
+    {
+        try
+        {
+            Json.Save(Paths.NotesFile, _notes);
+            _dirty = false;
+            _lastSaved = DateTime.Now;
+            Saved?.Invoke();
+        }
+        catch { }
+    }
+}
+
+public static class TempExport
+{
+    static string Dir => Path.Combine(Path.GetTempPath(), "NoteletExport");
+
+    public static string Write(Note n)
+    {
+        Directory.CreateDirectory(Dir);
+        var path = Path.Combine(Dir, FileName(n));
+        File.WriteAllText(path, n.Text, new UTF8Encoding(true));
+        return path;
+    }
+
+    public static string FileName(Note n)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var t = n.Title == "新便签" ? "note" : n.Title;
+        var sb = new StringBuilder();
+        foreach (var ch in t)
+        {
+            sb.Append(Array.IndexOf(invalid, ch) >= 0 ? '_' : ch);
+            if (sb.Length >= 24) break;
+        }
+        return $"简签-{sb}-{DateTime.Now:HHmmss}.txt";
+    }
+
+    public static void Cleanup()
+    {
+        try
+        {
+            if (!Directory.Exists(Dir)) return;
+            foreach (var f in Directory.GetFiles(Dir))
+                if (File.GetLastWriteTime(f) < DateTime.Now.AddDays(-1))
+                    File.Delete(f);
+        }
+        catch { }
+    }
+}

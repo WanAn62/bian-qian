@@ -1,0 +1,81 @@
+# 简签 Notelet
+
+> 小而美的 Windows 桌面便签：拖进拖出、随心美化、轻量省内存。
+
+![Build](https://github.com/WanAn62/bian-qian/actions/workflows/build.yml/badge.svg)
+![License](https://img.shields.io/badge/license-MIT-green)
+![.NET](https://img.shields.io/badge/.NET-9.0%20WPF-blueviolet)
+![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-lightgrey)
+
+![简签 Notelet 截图](docs/screenshot.png)
+
+## ✨ 特性
+
+- **卡片便签墙** —— 双击空白处 / `Ctrl+N` 新建；双击卡片直接编辑，首行自动作为标题
+- **拖进来** —— 把 `.txt` / `.md` / `.log` / `.csv` 等文本文件拖进窗口，即变成一张便签（自动识别 UTF-8 / GB18030 编码）；复制文字后 `Ctrl+V` 也能直接变成新便签
+- **拖出去** —— 按住卡片拖到桌面或资源管理器，即导出为 `.txt` 文件
+- **随心美化** —— 6 套预设主题（暖纸 / 墨夜 / 薄荷 / 蜜桃 / 云母 / 亚克力夜），支持自定义窗口底色、卡片底色、强调色、文字色、圆角、字号、卡片宽度、字体，并可用 **Windows 11 原生云母 / 亚克力毛玻璃**背景；主题可导出 / 导入（JSON）
+- **10 色便签色签** —— 每张卡片可单独配色，深浅底色自动适配文字颜色
+- **实用细节** —— 置顶便签、窗口置顶、回收站（误删可恢复）、实时搜索（`Ctrl+K`）、自动保存 + 启动时自动备份（保留最近 10 份）、单实例运行
+
+## 📦 下载运行
+
+从 [Releases](../../releases) 下载 zip 解压，运行 `Notelet.exe`。
+
+- 便携版（约 1~2 MB）：需要安装 [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0)
+- 单文件版（自包含）：无需安装任何运行时
+
+## 🚀 从源码运行
+
+```bash
+dotnet run --project src/Notelet
+```
+
+发布单个 exe：
+
+```bash
+# 便携版（依赖 .NET 9 Desktop Runtime）
+dotnet publish src/Notelet/Notelet.csproj -c Release -r win-x64 --self-contained false -o out/portable
+
+# 自包含单文件（无需运行时）
+dotnet publish src/Notelet/Notelet.csproj -c Release -r win-x64 --self-contained true \
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o out/singlefile
+```
+
+## ⌨️ 快捷键
+
+| 快捷键 | 功能 |
+| --- | --- |
+| `Ctrl+N` | 新建便签 |
+| `Ctrl+K` | 搜索 |
+| `Ctrl+V` | 粘贴文字直接生成新便签 |
+| 双击卡片 | 编辑 |
+| `Ctrl+Enter` / `Esc` | 完成编辑 |
+| 双击空白处 | 新建便签 |
+
+## 🔒 数据与隐私
+
+纯本地应用，不上传任何数据。数据保存在 `%APPDATA%\Notelet`：
+
+- `notes.json` —— 全部便签
+- `settings.json` —— 主题与窗口设置
+- `backups/` —— 每次启动自动备份，保留最近 10 份
+
+## 🛠 技术栈
+
+C# / .NET 9 WPF，无任何第三方依赖。窗口背景使用 DWM 系统级云母 / 亚克力材质（不支持的系统自动回退纯色）。
+
+## 🗺 Roadmap
+
+- [ ] Markdown 渲染与待办复选框
+- [ ] 托盘图标与最小化到托盘
+- [ ] 便签独立置顶浮窗模式
+- [ ] 多语言（English UI）
+
+## English
+
+**Notelet** is a small & beautiful sticky-notes app for Windows: drag text files in to import, drag cards out to export as `.txt`, fully customizable themes (including native Windows 11 Mica / Acrylic backdrop), pin, trash, instant search, autosave with backups. Built with C# / .NET 9 WPF, zero dependencies, MIT licensed.
+
+## License
+
+[MIT](LICENSE)
