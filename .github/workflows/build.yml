@@ -3,8 +3,12 @@ name: Build
 on:
   push:
     branches: [main, master]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -26,8 +30,76 @@ jobs:
           -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
           -p:EnableCompressionInSingleFile=true -o out/singlefile
 
+      - name: Package zips
+        shell: pwsh
+        run: |
+          @'
+          简签 Notelet — 使用说明
+          ========================
+
+          1. 解压后双击 Notelet.exe 即可使用（便携版需要已安装 .NET 9 Desktop Runtime）。
+          2. 数据保存在 %APPDATA%\Notelet，纯本地存储，不上传任何内容。
+          3. 把 .txt / .md 文件拖进窗口即可导入；把卡片拖到桌面即可导出为 .txt。
+          4. 点右上角调色板按钮可更换主题与配色；回收站里的便签可随时恢复。
+
+          项目主页与源码：https://github.com/WanAn62/bian-qian
+          '@ | Out-File -FilePath out/portable/说明.txt -Encoding utf8
+
+          Compress-Archive -Path out/portable/* -DestinationPath "Notelet-$env:GITHUB_REF_NAME-portable.zip"
+          Compress-Archive -Path out/singlefile/* -DestinationPath "Notelet-$env:GITHUB_REF_NAME-singlefile.zip"
+
+      - name: Checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem *.zip | Get-FileHash -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $($_.Path)" } |
+            Out-File -FilePath checksums.txt -Encoding ascii
+          Get-Content checksums.txt
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Notelet-win-x64
-          path: out/
+          path: |
+            *.zip
+            checksums.txt
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > release-notes.md <<'EOF'
+          简签 Notelet 首个正式版本 🎉
+
+          小而美的 Windows 桌面便签：拖进拖出、随心美化、轻量省内存。
+
+          ## 📦 下载哪个？
+
+          | 文件 | 说明 |
+          | --- | --- |
+          | `Notelet-v1.0.0-portable.zip` | 便携版（约 1 MB），需已安装 [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) |
+          | `Notelet-v1.0.0-singlefile.zip` | 自包含单文件版（约 80 MB），解压即用，无需任何运行时 |
+
+          SHA256 校验值见 `checksums.txt`。
+
+          ## ✨ 功能亮点
+
+          - 卡片便签墙：双击空白新建、双击卡片编辑，首行自动作为标题
+          - 拖进来：.txt / .md 等文本文件拖进窗口即成便签（自动识别编码）
+          - 拖出去：卡片拖到桌面 / 资源管理器即导出为 .txt
+          - 美化：6 套预设主题 + 自定义配色、圆角、字号、字体，支持 Windows 11 原生云母 / 亚克力毛玻璃
+          - 细节：置顶、回收站、实时搜索（Ctrl+K）、自动保存 + 启动备份、单实例、纯本地存储
+
+          ## 🖥 系统要求
+
+          Windows 10 1809+ / Windows 11；云母与亚克力背景效果需要 Windows 11 22H2+。
+
+          ---
+          English: A small & beautiful sticky-notes app for Windows. Drag files in to import, drag cards out to export as .txt, fully customizable themes with native Mica/Acrylic backdrop.
+          EOF
+          gh release create "$GITHUB_REF_NAME" \
+            --title "简签 Notelet $GITHUB_REF_NAME" \
+            --notes-file release-notes.md \
+            Notelet-*.zip checksums.txt
