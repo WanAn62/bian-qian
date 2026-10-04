@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -6,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Notelet.Models;
 
@@ -36,6 +38,7 @@ public static partial class Markdown
             var t = raw.Trim();
             if (t.Length == 0) { sb.Append('\n'); continue; }
             if (t.StartsWith("```") || t is "---" or "***" or "___") continue;
+            if (t.StartsWith("![") && t.Contains("](") && t.EndsWith(")")) { sb.Append("[图片]\n"); continue; }
             if (t.StartsWith("### ")) t = t[4..];
             else if (t.StartsWith("## ")) t = t[3..];
             else if (t.StartsWith("# ")) t = t[2..];
@@ -185,6 +188,24 @@ public static partial class Markdown
                     Margin = new Thickness(0, 4, 0, 4),
                 }));
             }
+            else if (t.StartsWith("![") && t.Contains("](") && t.EndsWith(")"))
+            {
+                // 图片行：![说明](路径) —— 仅支持本地路径 / images 目录内文件名
+                var m2 = Regex.Match(t, @"^!\[([^\]]*)\]\((.+)\)$");
+                var path = ResolveImagePath(m2.Success ? m2.Groups[2].Value : "");
+                if (path is not null)
+                {
+                    doc.Blocks.Add(new BlockUIContainer(ImageBlock(path, 240)));
+                }
+                else
+                {
+                    var p = new Paragraph { Margin = new Thickness(0, 1, 0, 1) };
+                    p.Inlines.Add(new Run("🖼 [图片]") { Foreground = sub });
+                    doc.Blocks.Add(p);
+                }
+                if (nl < 0) break;
+                continue;
+            }
             else if (t.StartsWith("> "))
             {
                 var p = new Paragraph
@@ -275,6 +296,39 @@ public static partial class Markdown
         };
         AddTo(p.Inlines, ParseInlines(content, fg, fg, accent, codeBg, size, true, false));
         return p;
+    }
+
+    /// <summary>解析图片引用：支持 images 目录内文件名与本地绝对路径，联网地址一律不支持。</summary>
+    internal static string? ResolveImagePath(string reference)
+    {
+        if (string.IsNullOrWhiteSpace(reference)) return null;
+        reference = reference.Trim();
+        if (reference.StartsWith("http:", StringComparison.OrdinalIgnoreCase) ||
+            reference.StartsWith("https:", StringComparison.OrdinalIgnoreCase)) return null;
+        var path = Path.IsPathRooted(reference)
+            ? reference
+            : System.IO.Path.Combine(Paths.ImagesDir, reference);
+        return File.Exists(path) ? path : null;
+    }
+
+    internal static Image ImageBlock(string path, double maxHeight)
+    {
+        var bi = new BitmapImage();
+        bi.BeginInit();
+        bi.CacheOption = BitmapCacheOption.OnLoad;
+        bi.UriSource = new Uri(path);
+        bi.DecodePixelWidth = 520;
+        bi.EndInit();
+        bi.Freeze();
+        return new Image
+        {
+            Source = bi,
+            MaxHeight = maxHeight,
+            Stretch = Stretch.Uniform,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(0, 2, 0, 2),
+            Cursor = Cursors.Hand,
+        };
     }
 
     /// <summary>勾选/取消任务清单项：把原文对应偏移处的 ' ' 与 'x' 互换。</summary>

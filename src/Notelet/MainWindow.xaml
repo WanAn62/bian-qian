@@ -22,6 +22,8 @@
 
     <Window.Resources>
         <local:NoteCardConverter x:Key="NoteConv"/>
+        <local:ImgSourceConverter x:Key="ImgConv"/>
+        <local:CollectionToVisibilityConverter x:Key="CollConv"/>
 
         <!-- 卡片悬浮小按钮：悬停卡片时出现 -->
         <Style x:Key="CardBtn" TargetType="Button" BasedOn="{StaticResource IconBtn}">
@@ -102,6 +104,7 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0" HorizontalAlignment="Right"
                             WindowChrome.IsHitTestVisibleInChrome="True">
                     <Button Content="&#xE710;" Style="{StaticResource IconBtn}" Click="NewBtn_Click" ToolTip="新建便签（Ctrl+N）"/>
+                    <Button Content="&#xE70F;" Style="{StaticResource IconBtn}" Click="QuickBtn_Click" ToolTip="快速便签（Ctrl+Alt+Q）"/>
                     <Button x:Name="ThemeBtn" Content="&#xE790;" Style="{StaticResource IconBtn}" Click="ThemeBtn_Click" ToolTip="美化"/>
                     <ToggleButton x:Name="PinWinBtn" Content="&#xE718;" Style="{StaticResource IconToggle}"
                                   Click="PinWinBtn_Click" ToolTip="窗口置顶"/>
@@ -133,6 +136,17 @@
                                         Margin="0,0,14,14" Cursor="Hand"
                                         MouseLeftButtonDown="Card_MouseDown" MouseMove="Card_MouseMove"
                                         LostKeyboardFocus="Card_LostFocus">
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="置顶 / 取消置顶" Click="MenuPin_Click"/>
+                                            <MenuItem Header="磁贴速览" Click="MenuTile_Click"/>
+                                            <MenuItem Header="复制全文" Click="MenuCopy_Click"/>
+                                            <MenuItem Header="导出为图片…" Click="MenuPng_Click"/>
+                                            <MenuItem Header="导出为文件…" Click="MenuFile_Click"/>
+                                            <Separator/>
+                                            <MenuItem Header="删除" Click="MenuDel_Click"/>
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Style.Triggers>
@@ -161,6 +175,25 @@
                                                        TextTrimming="CharacterEllipsis"
                                                        Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=sub}"
                                                        svc:MarkdownBody.Enable="True"/>
+                                            <ItemsControl ItemsSource="{Binding ImageFiles}"
+                                                          Visibility="{Binding ImageFiles, Converter={StaticResource CollConv}}"
+                                                          Margin="0,8,0,0">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel/>
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border CornerRadius="8" ClipToBounds="True" Margin="0,0,6,6"
+                                                                Cursor="Hand" MouseLeftButtonDown="CardImage_Click"
+                                                                ToolTip="点击查看原图">
+                                                            <Image Source="{Binding Converter={StaticResource ImgConv}}"
+                                                                   MaxHeight="96" MaxWidth="104" Stretch="Uniform"/>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
                                             <Grid Margin="0,10,0,0">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
@@ -256,6 +289,9 @@
                                                             </Style>
                                                         </Button.Style>
                                                     </Button>
+                                                    <TextBlock FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"
+                                                               VerticalAlignment="Center" Margin="8,0,0,0"
+                                                               Text="{Binding Text.Length, StringFormat={}{0} 字}"/>
                                                 </StackPanel>
                                                 <TextBlock FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"
                                                            HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -345,10 +381,13 @@
 
             <!-- ═══ 更多菜单 ═══ -->
             <Popup x:Name="MenuPopup" PlacementTarget="{Binding ElementName=MoreBtn}" Placement="Bottom"
-                   StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                   StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" Opened="MenuPopup_Opened">
                 <Border Width="212" Background="{DynamicResource Card.Brush}" BorderBrush="{DynamicResource Border.Brush}"
                         BorderThickness="1" CornerRadius="12" Effect="{StaticResource CardHover.Shadow}" Margin="8,0,8,10" Padding="6">
                     <StackPanel>
+                        <Button x:Name="AutostartItem" Content="开机自启" Style="{StaticResource FlatBtn}" Click="AutostartToggle_Click"/>
+                        <Button x:Name="FollowSystemItem" Content="跟随系统深浅色" Style="{StaticResource FlatBtn}" Click="FollowSystemToggle_Click"/>
+                        <Separator Margin="6,2"/>
                         <Button Content="打开数据文件夹" Style="{StaticResource FlatBtn}" Click="OpenData_Click"/>
                         <Button Content="导出全部便签" Style="{StaticResource FlatBtn}" Click="ExportAll_Click"/>
                         <Button Content="导入便签备份" Style="{StaticResource FlatBtn}" Click="ImportAll_Click"/>

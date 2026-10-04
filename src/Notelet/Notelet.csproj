@@ -9,7 +9,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Notelet</RootNamespace>
     <AssemblyName>Notelet</AssemblyName>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Authors>WanAn62</Authors>
     <Company>WanAn62</Company>
     <AssemblyTitle>简签 Notelet</AssemblyTitle>

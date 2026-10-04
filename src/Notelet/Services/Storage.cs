@@ -14,11 +14,13 @@ public static class Paths
     public static readonly string NotesFile = Path.Combine(Root, "notes.json");
     public static readonly string SettingsFile = Path.Combine(Root, "settings.json");
     public static readonly string BackupDir = Path.Combine(Root, "backups");
+    public static readonly string ImagesDir = Path.Combine(Root, "images");
 
     public static void Ensure()
     {
         Directory.CreateDirectory(Root);
         Directory.CreateDirectory(BackupDir);
+        Directory.CreateDirectory(ImagesDir);
     }
 }
 
@@ -151,12 +153,22 @@ public static class TempExport
 {
     static string Dir => Path.Combine(Path.GetTempPath(), "NoteletExport");
 
-    public static string Write(Note n)
+    /// <summary>把便签导出为临时文件；有图片时一并拷贝，返回主文件 + 图片路径（供系统拖拽多文件）。</summary>
+    public static List<string> Write(Note n)
     {
         Directory.CreateDirectory(Dir);
         var path = Path.Combine(Dir, FileName(n));
         File.WriteAllText(path, n.Text, new UTF8Encoding(true));
-        return path;
+        var files = new List<string> { path };
+        foreach (var img in n.ImageFiles)
+        {
+            var src = Path.Combine(Paths.ImagesDir, img);
+            if (!File.Exists(src)) continue;
+            var dst = Path.Combine(Dir, img);
+            File.Copy(src, dst, overwrite: true);
+            files.Add(dst);
+        }
+        return files;
     }
 
     public static string FileName(Note n)

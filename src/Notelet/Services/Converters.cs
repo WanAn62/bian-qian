@@ -1,6 +1,10 @@
+using System.Collections;
 using System.Globalization;
+using System.IO;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Notelet.Models;
 using Notelet.Services;
 
@@ -61,6 +65,45 @@ public class NoteCardConverter : IValueConverter
         b.Freeze();
         return b;
     }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>图片文件名 → 卡片缩略图（images 目录内）。</summary>
+public class ImgSourceConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is not string name || name.Length == 0) return null!;
+        try
+        {
+            var path = Path.Combine(Paths.ImagesDir, name);
+            if (!File.Exists(path)) return null!;
+            var bi = new BitmapImage();
+            bi.BeginInit();
+            bi.CacheOption = BitmapCacheOption.OnLoad;
+            bi.UriSource = new Uri(path);
+            bi.DecodePixelWidth = 300;
+            bi.EndInit();
+            bi.Freeze();
+            return bi;
+        }
+        catch
+        {
+            return null!;
+        }
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>集合非空 → Visible，否则 Collapsed。</summary>
+public class CollectionToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is ICollection c && c.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         => throw new NotSupportedException();

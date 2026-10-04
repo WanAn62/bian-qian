@@ -84,33 +84,20 @@ public partial class TileWindow : Window
         TileDate.Text = _note.UpdatedAt.ToString("yyyy/MM/dd HH:mm");
 
         BodyHost.Children.Clear();
-        if (_note.IsMarkdown)
+        // 统一用 FlowDoc：纯文本 / Markdown / 图片 / 任务清单都能呈现
+        var box = new RichTextBox
         {
-            var box = new RichTextBox
-            {
-                IsReadOnly = true,
-                IsDocumentEnabled = true,
-                BorderThickness = new Thickness(0),
-                Background = Brushes.Transparent,
-                Padding = new Thickness(0),
-                MaxHeight = 400,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                FontSize = 13.5,
-            };
-            box.Document = Markdown.FlowDoc(_note, fg, sub, accent, codeBg, codeBg, 13.5);
-            BodyHost.Children.Add(box);
-        }
-        else
-        {
-            BodyHost.Children.Add(new TextBlock
-            {
-                Text = _note.Body,
-                TextWrapping = TextWrapping.Wrap,
-                Foreground = fg,
-                FontSize = 13.5,
-                MaxHeight = 400,
-            });
-        }
+            IsReadOnly = true,
+            IsDocumentEnabled = true,
+            BorderThickness = new Thickness(0),
+            Background = Brushes.Transparent,
+            Padding = new Thickness(0),
+            MaxHeight = 400,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            FontSize = 13.5,
+        };
+        box.Document = Markdown.FlowDoc(_note, fg, sub, accent, codeBg, codeBg, 13.5);
+        BodyHost.Children.Add(box);
     }
 
     void UpdateTopVisual()

@@ -10,6 +10,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Notelet.Models;
@@ -36,6 +37,7 @@ public partial class MainWindow : Window
     bool _exitRequested;
     bool _tipShown;
     const int HotKeyId = 0xB101;
+    const int HotKeyQuickId = 0xB102;
     const int WM_HOTKEY = 0x0312;
     const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2;
 
@@ -86,8 +88,9 @@ public partial class MainWindow : Window
         {
             ThemeService.ApplyBackdrop(this);
             var hwnd = new WindowInteropHelper(this).Handle;
-            // 全局热键 Ctrl+Alt+N：呼出 / 隐藏
+            // 全局热键 Ctrl+Alt+N：呼出 / 隐藏；Ctrl+Alt+Q：快速便签
             RegisterHotKey(hwnd, HotKeyId, MOD_CONTROL | MOD_ALT, 0x4E);
+            RegisterHotKey(hwnd, HotKeyQuickId, MOD_CONTROL | MOD_ALT, 0x51);
             HwndSource.FromHwnd(hwnd)?.AddHook(WndProc);
         };
 
@@ -98,6 +101,14 @@ public partial class MainWindow : Window
         SettingsRepo.Save(_settings);
 
         InitTray();
+
+        // 跟随系统深浅色
+        Microsoft.Win32.SystemEvents.UserPreferenceChanged += (_, args) =>
+        {
+            if (args.Category == Microsoft.Win32.UserPreferenceCategory.General)
+                Dispatcher.BeginInvoke(ApplySystemTheme);
+        };
+        if (_settings.FollowSystem) ApplySystemTheme();
     }
 
     // ───────────────────────── 托盘 / 全局热键（随呼随用） ─────────────────────────
@@ -118,6 +129,7 @@ public partial class MainWindow : Window
             var menu = new WinForms.ContextMenuStrip();
             menu.Items.Add("打开 简签", null, (_, __) => ShowMain());
             menu.Items.Add("新建便签", null, (_, __) => { ShowMain(); NewNote(); });
+            menu.Items.Add("快速便签", null, (_, __) => NewQuickNote());
             menu.Items.Add(new WinForms.ToolStripSeparator());
             var trayItem = new WinForms.ToolStripMenuItem("关闭时最小化到托盘")
             {
@@ -130,6 +142,13 @@ public partial class MainWindow : Window
                 SaveSettingsSoon();
             };
             menu.Items.Add(trayItem);
+            var autoItem = new WinForms.ToolStripMenuItem("开机自启") { Checked = _settings.Autostart };
+            autoItem.Click += (_, __) =>
+            {
+                ApplyAutostart(!_settings.Autostart);
+                autoItem.Checked = _settings.Autostart;
+            };
+            menu.Items.Add(autoItem);
             menu.Items.Add(new WinForms.ToolStripSeparator());
             menu.Items.Add("退出", null, (_, __) => ExitApp());
             _tray.ContextMenuStrip = menu;
@@ -140,11 +159,20 @@ public partial class MainWindow : Window
 
     IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (msg == WM_HOTKEY && wParam.ToInt32() == HotKeyId)
+        if (msg == WM_HOTKEY)
         {
-            if (IsVisible) Hide();
-            else ShowMain();
-            handled = true;
+            int id = wParam.ToInt32();
+            if (id == HotKeyId)
+            {
+                if (IsVisible) Hide();
+                else ShowMain();
+                handled = true;
+            }
+            else if (id == HotKeyQuickId)
+            {
+                NewQuickNote();
+                handled = true;
+            }
         }
         return IntPtr.Zero;
     }
@@ -160,6 +188,88 @@ public partial class MainWindow : Window
     {
         _exitRequested = true;
         Close();
+    }
+
+    // ───────────────────────── 快速便签（多开小窗） ─────────────────────────
+
+    void NewQuickNote()
+    {
+        var n = new Note { ColorKey = NextColor() };
+        _repo.Items.Insert(0, n);
+        _repo.MarkDirty();
+        RefreshView();
+        var w = new QuickNoteWindow(n,
+            onChanged: () => { _repo.MarkDirty(); RefreshView(); UpdateStatus(); },
+            onDiscard: dn => { _repo.Items.Remove(dn); RefreshView(); UpdateStatus(); },
+            onSaveAll: () => _repo.SaveNow());
+        w.Show();
+        w.FocusBox();
+    }
+
+    void QuickBtn_Click(object sender, RoutedEventArgs e) => NewQuickNote();
+
+    // ───────────────────────── 图片便签 ─────────────────────────
+
+    static readonly string[] ImageExts = { ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp" };
+
+    string SaveImageFile(string src)
+    {
+        Paths.Ensure();
+        var name = Path.GetFileName(src);
+        var dst = Path.Combine(Paths.ImagesDir, name);
+        if (File.Exists(dst))
+        {
+            name = $"{Path.GetFileNameWithoutExtension(src)}-{DateTime.Now:HHmmss}{Path.GetExtension(src)}";
+            dst = Path.Combine(Paths.ImagesDir, name);
+        }
+        File.Copy(src, dst);
+        return name;
+    }
+
+    string? SaveClipboardImage()
+    {
+        try
+        {
+            var src = Clipboard.GetImage();
+            if (src is null) return null;
+            Paths.Ensure();
+            var name = $"img-{DateTime.Now:yyyyMMdd-HHmmss}.png";
+            var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(src));
+            using var fs = File.Create(Path.Combine(Paths.ImagesDir, name));
+            enc.Save(fs);
+            return name;
+        }
+        catch { return null; }
+    }
+
+    void NewImageNote(List<string> names)
+    {
+        var n = new Note { ColorKey = NextColor(), ImageFiles = names };
+        _repo.Items.Insert(0, n);
+        _repo.MarkDirty();
+        RefreshView();
+        UpdateStatus();
+    }
+
+    static void DeleteNoteFiles(Note n)
+    {
+        foreach (var img in n.ImageFiles)
+        {
+            try { File.Delete(Path.Combine(Paths.ImagesDir, img)); } catch { }
+        }
+    }
+
+    void CardImage_Click(object sender, MouseButtonEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not string name) return;
+        var path = Path.Combine(Paths.ImagesDir, name);
+        if (!File.Exists(path)) return;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
+        }
+        catch { }
     }
 
     // ───────────────────────── 排序 / 过滤 / 状态 ─────────────────────────
@@ -266,6 +376,7 @@ public partial class MainWindow : Window
     void PurgeBtn_Click(object s, RoutedEventArgs e)
     {
         if ((s as FrameworkElement)?.DataContext is not Note n) return;
+        DeleteNoteFiles(n);
         _repo.Items.Remove(n);
         _repo.MarkDirty();
         RefreshView();
@@ -277,7 +388,11 @@ public partial class MainWindow : Window
         if (dead.Count == 0) return;
         if (MessageBox.Show(this, $"彻底删除回收站中的 {dead.Count} 条便签？此操作不可恢复。",
                 "简签 Notelet", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-        foreach (var n in dead) _repo.Items.Remove(n);
+        foreach (var n in dead)
+        {
+            DeleteNoteFiles(n);
+            _repo.Items.Remove(n);
+        }
         _repo.MarkDirty();
         RefreshView();
     }
@@ -383,8 +498,8 @@ public partial class MainWindow : Window
     {
         try
         {
-            var path = TempExport.Write(n);
-            var data = new DataObject(DataFormats.FileDrop, new[] { path });
+            var files = TempExport.Write(n);
+            var data = new DataObject(DataFormats.FileDrop, files.ToArray());
             DragDrop.DoDragDrop(card, data, DragDropEffects.Copy);
         }
         catch { /* 拖出失败不影响应用 */ }
@@ -406,17 +521,25 @@ public partial class MainWindow : Window
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 if (e.Data.GetData(DataFormats.FileDrop) is not string[] files) return;
-                const string exts = ".txt.md.markdown.log.csv.json.ini";
+                const string textExts = ".txt.md.markdown.log.csv.json.ini";
+                List<string>? imgNames = null;
                 int count = 0;
                 foreach (var f in files)
                 {
                     if (!File.Exists(f)) continue;
                     var ext = Path.GetExtension(f).ToLowerInvariant();
-                    if (!exts.Contains(ext)) continue;
-                    NewNote(ReadTextSmart(f), NextColor());
-                    count++;
+                    if (ImageExts.Contains(ext))
+                    {
+                        (imgNames ??= new List<string>()).Add(SaveImageFile(f));
+                    }
+                    else if (textExts.Contains(ext))
+                    {
+                        NewNote(ReadTextSmart(f), NextColor());
+                        count++;
+                    }
                 }
-                if (count > 0) _repo.SaveNow();
+                if (imgNames is { Count: > 0 }) NewImageNote(imgNames);
+                if (count > 0 || imgNames is { Count: > 0 }) _repo.SaveNow();
             }
             else if (e.Data.GetDataPresent(DataFormats.UnicodeText) &&
                      e.Data.GetData(DataFormats.UnicodeText) is string text &&
@@ -490,6 +613,11 @@ public partial class MainWindow : Window
     void TileBtn_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.DataContext is not Note n) return;
+        OpenTile(n);
+    }
+
+    void OpenTile(Note n)
+    {
         var existing = Application.Current.Windows.OfType<TileWindow>().FirstOrDefault(t => t.Note == n);
         if (existing is not null) { existing.Activate(); return; }
         var tile = new TileWindow(n);
@@ -497,6 +625,167 @@ public partial class MainWindow : Window
         tile.Closed += (_, __) => n.IsTiled = false;
         tile.Show();
     }
+
+    // ───────────────────────── 卡片右键菜单 ─────────────────────────
+
+    Note? MenuNote(object sender)
+        => (sender as MenuItem)?.Parent is ContextMenu cm && cm.PlacementTarget is Border { DataContext: Note n } ? n : null;
+
+    void MenuPin_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuNote(sender) is not Note n) return;
+        n.Pinned = !n.Pinned;
+        n.UpdatedAt = DateTime.Now;
+        _repo.MarkDirty();
+        View.Refresh();
+    }
+
+    void MenuTile_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuNote(sender) is not Note n) return;
+        OpenTile(n);
+    }
+
+    void MenuCopy_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuNote(sender) is not Note n) return;
+        try { Clipboard.SetText(n.Text); } catch { }
+    }
+
+    void MenuDel_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuNote(sender) is not Note n) return;
+        n.IsEditing = false;
+        n.Deleted = true;
+        _repo.MarkDirty();
+        RefreshView();
+    }
+
+    void MenuFile_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuNote(sender) is not Note n) return;
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Filter = n.IsMarkdown ? "Markdown|*.md" : "文本文件|*.txt",
+            FileName = $"简签-{n.Title}",
+        };
+        if (dlg.ShowDialog(this) != true) return;
+        try
+        {
+            var dir = Path.GetDirectoryName(dlg.FileName)!;
+            File.WriteAllText(dlg.FileName, n.Text, new UTF8Encoding(true));
+            foreach (var img in n.ImageFiles)
+            {
+                var src = Path.Combine(Paths.ImagesDir, img);
+                if (File.Exists(src)) File.Copy(src, Path.Combine(dir, img), overwrite: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"导出失败：{ex.Message}", "简签 Notelet");
+        }
+    }
+
+    void MenuPng_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuNote(sender) is not Note n) return;
+        if (CardsList.ItemContainerGenerator.ContainerFromItem(n) is not ContentPresenter cp) return;
+        if (FindDescendant<Border>(cp) is not Border card || card.ActualWidth < 10) return;
+
+        double w = card.ActualWidth, h = card.ActualHeight;
+        try
+        {
+            var oldMargin = card.Margin;
+            card.Margin = new Thickness(0);
+            card.Measure(new Size(w, h));
+            card.Arrange(new Rect(0, 0, w, h));
+
+            var rtb = new RenderTargetBitmap((int)(w * 2), (int)(h * 2), 192, 192, System.Windows.Media.PixelFormats.Pbgra32);
+            rtb.Render(card);
+
+            card.Margin = oldMargin;
+            card.InvalidateMeasure();
+
+            var dlg = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "PNG 图片|*.png",
+                FileName = $"简签-{n.Title}.png",
+            };
+            if (dlg.ShowDialog(this) != true) return;
+            var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
+            using var fs = File.Create(dlg.FileName);
+            enc.Save(fs);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"导出失败：{ex.Message}", "简签 Notelet");
+        }
+    }
+
+    // ───────────────────────── 开机自启 / 跟随系统深浅色 ─────────────────────────
+
+    const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+
+    void ApplyAutostart(bool on)
+    {
+        try
+        {
+            using var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(RunKeyPath, true);
+            if (k is null) return;
+            if (on) k.SetValue("Notelet", $"\"{Environment.ProcessPath}\"");
+            else k.DeleteValue("Notelet", false);
+        }
+        catch { }
+        _settings.Autostart = on;
+        SaveSettingsSoon();
+    }
+
+    void AutostartToggle_Click(object sender, RoutedEventArgs e)
+    {
+        ApplyAutostart(!_settings.Autostart);
+        RefreshMenuToggles();
+    }
+
+    static bool SystemIsDark()
+    {
+        try
+        {
+            using var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+                @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            return k?.GetValue("AppsUseLightTheme") is int v && v == 0;
+        }
+        catch { return false; }
+    }
+
+    void ApplySystemTheme()
+    {
+        if (!_settings.FollowSystem) return;
+        if (_theme.Id is not ("paper" or "ink")) return;
+        var target = SystemIsDark() ? "ink" : "paper";
+        if (_theme.Id == target) return;
+        _theme = ThemeService.Presets.First(p => p.Id == target).Clone();
+        _settings.ThemeId = _theme.Id;
+        ThemeService.ApplyBrushes(_theme);
+        ThemeService.ApplyBackdrop(this);
+        SettingsRepo.Save(_settings);
+    }
+
+    void FollowSystemToggle_Click(object sender, RoutedEventArgs e)
+    {
+        _settings.FollowSystem = !_settings.FollowSystem;
+        SaveSettingsSoon();
+        RefreshMenuToggles();
+        if (_settings.FollowSystem) ApplySystemTheme();
+    }
+
+    void RefreshMenuToggles()
+    {
+        AutostartItem.Content = _settings.Autostart ? "开机自启  ✓" : "开机自启";
+        FollowSystemItem.Content = _settings.FollowSystem ? "跟随系统深浅色  ✓" : "跟随系统深浅色";
+    }
+
+    void MenuPopup_Opened(object sender, EventArgs e) => RefreshMenuToggles();
 
     static Border? CardRootOf(DependencyObject? d)
     {
@@ -677,6 +966,15 @@ public partial class MainWindow : Window
             {
                 NewNote(Clipboard.GetText());
                 e.Handled = true;
+            }
+            else if (Clipboard.ContainsImage())
+            {
+                var name = SaveClipboardImage();
+                if (name is not null)
+                {
+                    NewImageNote(new List<string> { name });
+                    e.Handled = true;
+                }
             }
         }
         else if (e.Key == Key.Escape && TrashMode)

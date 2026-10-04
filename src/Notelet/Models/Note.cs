@@ -38,6 +38,9 @@ public class Note : INotifyPropertyChanged
 
     public string ColorKey { get; set; } = "auto";
 
+    /// <summary>附带的图片文件名（存于 %APPDATA%\Notelet\images）。</summary>
+    public List<string> ImageFiles { get; set; } = new();
+
     public bool Pinned
     {
         get => _pinned;
@@ -86,7 +89,7 @@ public class Note : INotifyPropertyChanged
                 var s = raw.Trim();
                 if (s.Length > 0) return s;
             }
-            return "新便签";
+            return ImageFiles.Count > 0 ? "图片便签" : "新便签";
         }
     }
 

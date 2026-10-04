@@ -1,0 +1,49 @@
+<Window x:Class="Notelet.QuickNoteWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="快速便签" Width="340" SizeToContent="Height"
+        ShowInTaskbar="False" Topmost="True" WindowStartupLocation="Manual"
+        Background="{DynamicResource Card.Brush}"
+        Foreground="{DynamicResource Text.Brush}"
+        FontFamily="{DynamicResource BaseFont.FontFamily}"
+        FontSize="{DynamicResource BaseFontSize.Double}"
+        BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="34" ResizeBorderThickness="4" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="34"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" WindowChrome.IsHitTestVisibleInChrome="True">
+            <StackPanel Orientation="Horizontal" Margin="12,0,0,0">
+                <Ellipse x:Name="ColorDot" Width="9" Height="9" VerticalAlignment="Center"/>
+                <TextBlock Text="快速便签" FontSize="12" FontWeight="SemiBold" Margin="7,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+            <Button Content="&#xE8BB;" Style="{StaticResource CloseBtn}" Width="28" Height="28" FontSize="12"
+                    HorizontalAlignment="Right" Click="CloseBtn_Click" ToolTip="保存并关闭"/>
+        </Grid>
+
+        <StackPanel Grid.Row="1">
+            <TextBox x:Name="BodyBox"
+                     Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                     AcceptsReturn="True" TextWrapping="Wrap"
+                     BorderThickness="0" Background="Transparent"
+                     MinHeight="130" MaxHeight="320" VerticalScrollBarVisibility="Auto"
+                     Margin="10,2,10,0"
+                     CaretBrush="{DynamicResource Accent.Brush}"
+                     SelectionBrush="{DynamicResource Accent.Brush}"
+                     KeyDown="BodyBox_KeyDown"/>
+            <Grid Margin="12,4,12,8">
+                <TextBlock Text="Ctrl+Enter 保存 · Esc 保存并关闭" FontSize="10.5"
+                           Foreground="{DynamicResource Sub.Brush}" VerticalAlignment="Center"/>
+                <TextBlock x:Name="CountText" FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+            </Grid>
+        </StackPanel>
+    </Grid>
+</Window>
