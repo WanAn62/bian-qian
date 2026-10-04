@@ -11,6 +11,7 @@
         FontFamily="{DynamicResource BaseFont.FontFamily}"
         FontSize="{DynamicResource BaseFontSize.Double}"
         AllowDrop="True"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
         PreviewKeyDown="Window_PreviewKeyDown"
         DragOver="Window_DragOver" Drop="Window_Drop"
         Closing="Window_Closing">
@@ -304,10 +305,10 @@
                                 Click="ThemeBtn_Click" ToolTip="美化"/>
                         <ToggleButton x:Name="PinWinBtn" Content="&#xE718;" Style="{StaticResource IconToggle}"
                                       Click="PinWinBtn_Click" ToolTip="窗口置顶"/>
-                        <Button x:Name="MaxBtn" Content="&#xE922;" Style="{StaticResource IconBtn}"
-                                Click="MaxBtn_Click" ToolTip="最大化 / 还原（双击标题栏）"/>
                         <Border Width="1" Height="18" Background="{DynamicResource Border.Brush}" Margin="7,0"/>
                         <Button Content="&#xE921;" Style="{StaticResource IconBtn}" Click="MinBtn_Click" ToolTip="最小化"/>
+                        <Button x:Name="MaxBtn" Content="&#xE922;" Style="{StaticResource IconBtn}"
+                                Click="MaxBtn_Click" ToolTip="最大化 / 还原（双击标题栏）"/>
                         <Button Content="&#xE8BB;" Style="{StaticResource CloseBtn}" Click="CloseBtn_Click" ToolTip="关闭"/>
                     </StackPanel>
                 </Grid>
