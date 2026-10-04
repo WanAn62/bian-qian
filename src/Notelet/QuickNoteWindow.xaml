@@ -23,6 +23,8 @@
             <StackPanel Orientation="Horizontal" Margin="12,0,0,0">
                 <Ellipse x:Name="ColorDot" Width="9" Height="9" VerticalAlignment="Center"/>
                 <TextBlock Text="快速便签" FontSize="12" FontWeight="SemiBold" Margin="7,0,0,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Ctrl+Alt+Q 随时再开一张" FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"
+                           Margin="10,1,0,0" VerticalAlignment="Center"/>
             </StackPanel>
             <Button Content="&#xE8BB;" Style="{StaticResource CloseBtn}" Width="28" Height="28" FontSize="12"
                     HorizontalAlignment="Right" Click="CloseBtn_Click" ToolTip="保存并关闭"/>

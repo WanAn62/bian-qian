@@ -27,7 +27,7 @@ public static class ThemeService
         Version++;
 
         var r = Application.Current.Resources;
-        r["Bg.Brush"] = Brush(t.Bg);
+        r["Bg.Brush"] = BgGradient(t.Bg);
         r["Card.Brush"] = Brush(t.Card);
         r["Text.Brush"] = Brush(t.Text);
         r["Sub.Brush"] = Brush(t.Sub);
@@ -37,8 +37,9 @@ public static class ThemeService
         r["ThumbBrush"] = t.IsDark ? BrushAlpha("#FFFFFF", 0x33) : BrushAlpha("#000000", 0x2E);
         r["Radius.CornerRadius"] = new CornerRadius(t.Radius);
         r["BaseFontSize.Double"] = t.FontSize;
-        r["TitleSize.Double"] = t.FontSize + 1.5;
-        r["BodyMax.Double"] = t.FontSize * 1.5 * 6;
+        r["TitleSize.Double"] = t.FontSize + 2;
+        r["LineHeight.Double"] = t.FontSize * 1.55;
+        r["BodyMax.Double"] = t.FontSize * 1.55 * 6;
         r["CardWidth.Double"] = t.CardWidth;
         r["BaseFont.FontFamily"] = new FontFamily(t.Font);
     }
@@ -67,7 +68,7 @@ public static class ThemeService
         {
             Dwm.DisableBackdrop(hwnd);
             chrome.GlassFrameThickness = new Thickness(0);
-            w.Background = Brush(t.Bg);
+            w.Background = (Brush)Application.Current.Resources["Bg.Brush"];
         }
     }
 
@@ -77,6 +78,21 @@ public static class ThemeService
         var c = Palette.FromHex(t.Bg);
         c.A = (byte)(t.IsDark ? 150 : 125);
         return BrushFrom(c);
+    }
+
+    /// <summary>窗口底色：向下微渐变，比纯色更有层次。</summary>
+    static LinearGradientBrush BgGradient(string hex)
+    {
+        var top = Palette.FromHex(hex);
+        var bottom = Color.FromRgb(
+            (byte)(top.R * 0.962), (byte)(top.G * 0.962), (byte)(top.B * 0.962));
+        var b = new LinearGradientBrush(top, bottom, 90)
+        {
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(0.25, 1),
+        };
+        b.Freeze();
+        return b;
     }
 
     static SolidColorBrush Brush(string hex) => BrushFrom(Palette.FromHex(hex));

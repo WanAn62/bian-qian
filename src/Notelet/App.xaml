@@ -17,14 +17,16 @@
 
         <CornerRadius x:Key="Radius.CornerRadius">14</CornerRadius>
         <sys:Double x:Key="BaseFontSize.Double">14</sys:Double>
-        <sys:Double x:Key="TitleSize.Double">15.5</sys:Double>
-        <sys:Double x:Key="BodyMax.Double">126</sys:Double>
+        <sys:Double x:Key="TitleSize.Double">16</sys:Double>
+        <sys:Double x:Key="LineHeight.Double">21.5</sys:Double>
+        <sys:Double x:Key="BodyMax.Double">128</sys:Double>
         <sys:Double x:Key="CardWidth.Double">244</sys:Double>
 
         <FontFamily x:Key="BaseFont.FontFamily">Microsoft YaHei UI</FontFamily>
         <FontFamily x:Key="IconFont.FontFamily">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
         <DropShadowEffect x:Key="CardHover.Shadow" BlurRadius="18" ShadowDepth="3" Direction="270" Opacity="0.20" Color="#000000"/>
+        <DropShadowEffect x:Key="CardRest.Shadow" BlurRadius="10" ShadowDepth="2" Direction="270" Opacity="0.10" Color="#000000"/>
 
         <!-- 图标按钮（顶栏 / 磁贴栏） -->
         <Style x:Key="IconBtn" TargetType="Button">

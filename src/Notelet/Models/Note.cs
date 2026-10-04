@@ -12,6 +12,7 @@ public class Note : INotifyPropertyChanged
     bool _previewing;
     bool _isMarkdown;
     bool _tiled;
+    bool _split;
     bool _deleted;
 
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
@@ -74,6 +75,14 @@ public class Note : INotifyPropertyChanged
     {
         get => _tiled;
         set { if (_tiled == value) return; _tiled = value; OnP(); }
+    }
+
+    /// <summary>编辑时是否分屏实时渲染（仅运行时）。</summary>
+    [JsonIgnore]
+    public bool IsSplit
+    {
+        get => _split;
+        set { if (_split == value) return; _split = value; OnP(); }
     }
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;

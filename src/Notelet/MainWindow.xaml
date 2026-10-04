@@ -58,6 +58,8 @@
 
             <!-- ═══ 顶栏 ═══ -->
             <Grid Grid.Row="0">
+                <Border VerticalAlignment="Bottom" Height="1" IsHitTestVisible="False"
+                        Background="{DynamicResource Border.Brush}" Opacity="0.55"/>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
                     <Ellipse Width="11" Height="11" Fill="{DynamicResource Accent.Brush}" VerticalAlignment="Center"/>
                     <TextBlock Text="简签" FontWeight="Bold" FontSize="15" Margin="8,0,0,0" VerticalAlignment="Center"/>
@@ -143,7 +145,7 @@
                                         CornerRadius="{DynamicResource Radius.CornerRadius}"
                                         Background="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=bg}"
                                         BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
-                                        Margin="0,0,14,14" Cursor="Hand"
+                                        Margin="0,0,16,16" Cursor="Hand"
                                         RenderTransformOrigin="0.5,0.5"
                                         MouseLeftButtonDown="Card_MouseDown" MouseMove="Card_MouseMove"
                                         MouseRightButtonUp="Card_RightClick"
@@ -171,6 +173,7 @@
                                     </Border.Triggers>
                                     <Border.Style>
                                         <Style TargetType="Border">
+                                            <Setter Property="Effect" Value="{StaticResource CardRest.Shadow}"/>
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
                                                     <Setter Property="Effect" Value="{StaticResource CardHover.Shadow}"/>
@@ -184,15 +187,16 @@
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <StackPanel Margin="14,12,12,10">
+                                    <StackPanel Margin="16,13,14,12">
                                         <!-- 浏览态 -->
                                         <StackPanel x:Name="ViewPart">
                                             <TextBlock Text="{Binding Title}"
                                                        FontSize="{DynamicResource TitleSize.Double}" FontWeight="SemiBold"
                                                        TextTrimming="CharacterEllipsis"
                                                        Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}"/>
-                                            <TextBlock Text="{Binding Body}" Margin="0,5,0,0"
+                                            <TextBlock Text="{Binding Body}" Margin="0,6,0,0"
                                                        FontSize="{DynamicResource BaseFontSize.Double}"
+                                                       LineHeight="{DynamicResource LineHeight.Double}"
                                                        TextWrapping="Wrap" MaxHeight="{DynamicResource BodyMax.Double}"
                                                        TextTrimming="CharacterEllipsis"
                                                        Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=sub}"
@@ -269,23 +273,55 @@
                                         </StackPanel>
                                         <!-- 编辑态 -->
                                         <StackPanel x:Name="EditPart" Visibility="Collapsed">
-                                            <TextBox x:Name="Editor"
-                                                     Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
-                                                     AcceptsReturn="True" TextWrapping="Wrap"
-                                                     BorderThickness="0" Background="Transparent"
-                                                     MinHeight="110" MaxHeight="430" VerticalScrollBarVisibility="Auto"
-                                                     FontSize="{DynamicResource BaseFontSize.Double}"
-                                                     Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}"
-                                                     CaretBrush="{DynamicResource Accent.Brush}"
-                                                     SelectionBrush="{DynamicResource Accent.Brush}"
-                                                     KeyDown="Editor_KeyDown"/>
-                                            <RichTextBox x:Name="PreviewBox"
-                                                         IsReadOnly="True" IsDocumentEnabled="True"
-                                                         BorderThickness="0" Background="Transparent" Padding="0"
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+                                                <TextBox x:Name="Editor" Grid.Row="0"
+                                                         Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                                         AcceptsReturn="True" TextWrapping="Wrap"
+                                                         BorderThickness="0" Background="Transparent"
                                                          MinHeight="110" MaxHeight="430" VerticalScrollBarVisibility="Auto"
                                                          FontSize="{DynamicResource BaseFontSize.Double}"
                                                          Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}"
-                                                         Visibility="Collapsed"/>
+                                                         CaretBrush="{DynamicResource Accent.Brush}"
+                                                         SelectionBrush="{DynamicResource Accent.Brush}"
+                                                         KeyDown="Editor_KeyDown">
+                                                    <TextBox.Style>
+                                                        <Style TargetType="TextBox">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBox.Style>
+                                                </TextBox>
+                                                <RichTextBox x:Name="PreviewBox" Grid.Row="1"
+                                                             IsReadOnly="True" IsDocumentEnabled="True"
+                                                             BorderThickness="0" Background="Transparent" Padding="0"
+                                                             MinHeight="110" VerticalScrollBarVisibility="Auto"
+                                                             FontSize="{DynamicResource BaseFontSize.Double}"
+                                                             Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}">
+                                                    <RichTextBox.Style>
+                                                        <Style TargetType="RichTextBox">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Setter Property="MaxHeight" Value="430"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsSplit}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                    <Setter Property="MaxHeight" Value="240"/>
+                                                                    <Setter Property="MinHeight" Value="90"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </RichTextBox.Style>
+                                                </RichTextBox>
+                                            </Grid>
                                             <DockPanel Margin="0,6,0,0">
                                                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
                                                     <Button Content="MD" FontFamily="Microsoft YaHei UI" Click="MdBtn_Click" ToolTip="以 Markdown 渲染">
@@ -311,6 +347,17 @@
                                                             </Style>
                                                         </Button.Style>
                                                     </Button>
+                                                    <Button Content="分屏" Click="SplitBtn_Click" ToolTip="编辑 + 实时渲染同屏（输入即渲染）" Margin="6,0,0,0">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource EditChip}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsSplit}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                    </Button>
                                                     <TextBlock FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"
                                                                VerticalAlignment="Center" Margin="8,0,0,0"
                                                                Text="{Binding Text.Length, StringFormat={}{0} 字}"/>
@@ -325,6 +372,9 @@
                                                                 <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
                                                                     <Setter Property="Text" Value="预览中：点击任务框可直接勾选"/>
                                                                 </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsSplit}" Value="True">
+                                                                    <Setter Property="Text" Value="分屏实时渲染中：输入即所见"/>
+                                                                </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </TextBlock.Style>
@@ -337,10 +387,6 @@
                                     <DataTrigger Binding="{Binding IsEditing}" Value="True">
                                         <Setter TargetName="ViewPart" Property="Visibility" Value="Collapsed"/>
                                         <Setter TargetName="EditPart" Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
-                                        <Setter TargetName="Editor" Property="Visibility" Value="Collapsed"/>
-                                        <Setter TargetName="PreviewBox" Property="Visibility" Value="Visible"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding TrashMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                         <Setter TargetName="NormalOps" Property="Visibility" Value="Collapsed"/>
@@ -407,7 +453,12 @@
 
             <!-- ═══ 状态栏 ═══ -->
             <Grid Grid.Row="2" Margin="16,0">
-                <TextBlock x:Name="StatusLeft" FontSize="11.5" Foreground="{DynamicResource Sub.Brush}" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="6" Height="6" Fill="{DynamicResource Accent.Brush}" Opacity="0.9"
+                             VerticalAlignment="Center"/>
+                    <TextBlock x:Name="StatusLeft" FontSize="11.5" Foreground="{DynamicResource Sub.Brush}"
+                               VerticalAlignment="Center" Margin="8,0,0,0"/>
+                </StackPanel>
                 <TextBlock x:Name="StatusRight" FontSize="11.5" Foreground="{DynamicResource Sub.Brush}"
                            VerticalAlignment="Center" HorizontalAlignment="Right"/>
             </Grid>

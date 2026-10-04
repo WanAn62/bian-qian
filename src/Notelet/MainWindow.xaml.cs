@@ -348,6 +348,7 @@ public partial class MainWindow : Window
         if (n.Deleted || TrashMode) return;
         n.IsPreviewing = false;
         SetPreview(n, false);
+        if (n.IsSplit) SetPreview(n, true); // 分屏状态在多次编辑间保持
         n.IsEditing = true;
         Dispatcher.BeginInvoke(DispatcherPriority.Input, () => FocusEditor(n));
     }
@@ -614,8 +615,17 @@ public partial class MainWindow : Window
     void PreviewBtn_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.DataContext is not Note n) return;
+        if (!n.IsPreviewing) n.IsSplit = false;
         n.IsPreviewing = !n.IsPreviewing;
         SetPreview(n, n.IsPreviewing);
+    }
+
+    void SplitBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not Note n) return;
+        n.IsSplit = !n.IsSplit;
+        if (n.IsSplit && n.IsPreviewing) n.IsPreviewing = false;
+        SetPreview(n, n.IsSplit);
     }
 
     void TileBtn_Click(object sender, RoutedEventArgs e)
