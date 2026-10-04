@@ -71,8 +71,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cat > release-notes.md <<'EOF'
-          简签 Notelet 首个正式版本 🎉
+          cat > release-notes.md <<EOF
+          简签 Notelet v${GITHUB_REF_NAME#v} 🎉
 
           小而美的 Windows 桌面便签：拖进拖出、随心美化、轻量省内存。
 
@@ -80,25 +80,30 @@ jobs:
 
           | 文件 | 说明 |
           | --- | --- |
-          | `Notelet-v1.0.0-win-x64.exe` | ✅ 推荐：完全自包含单文件，**下载后直接双击运行**，无需安装任何运行时 |
-          | `Notelet-v1.0.0-portable.zip` | 轻量版（约 1 MB），需已安装 [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) |
+          | \`Notelet-${GITHUB_REF_NAME}-win-x64.exe\` | ✅ 推荐：完全自包含单文件，**下载后直接双击运行**，无需安装任何运行时 |
+          | \`Notelet-${GITHUB_REF_NAME}-portable.zip\` | 轻量版（约 1 MB），需已安装 [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) |
 
-          SHA256 校验值见 `checksums.txt`。
+          SHA256 校验值见 \`checksums.txt\`。
 
           ## ✨ 功能亮点
 
-          - 卡片便签墙：双击空白新建、双击卡片编辑，首行自动作为标题
-          - 拖进来：.txt / .md 等文本文件拖进窗口即成便签（自动识别编码）
-          - 拖出去：卡片拖到桌面 / 资源管理器即导出为 .txt
-          - 美化：6 套预设主题 + 自定义配色、圆角、字号、字体，支持 Windows 11 原生云母 / 亚克力毛玻璃
-          - 细节：置顶、回收站、实时搜索（Ctrl+K）、自动保存 + 启动备份、单实例、纯本地存储
+          - 卡片便签墙 + 侧边栏工作台：视图导航、按颜色过滤、双击新建/编辑
+          - Markdown：分屏实时渲染、预览模式，任务清单可直接点击勾选
+          - 图片便签：拖入图片或粘贴截图，卡片缩略图 + 预览/磁贴内嵌显示
+          - 快速便签：Ctrl+Alt+Q 随手唤出小窗，可多开
+          - 磁贴模式：便签贴在桌面，速览 / 复制 / 直接编辑
+          - 拖进来：.txt / .md / 图片拖进窗口即成便签；拖出去：卡片即导出为文件
+          - 美化：6 套预设主题 + 自定义配色、圆角、字号、字体，Windows 11 原生云母 / 亚克力
+          - 设置中心：开机自启、关闭到托盘、跟随系统深浅色、备份管理
+          - 右键卡片：导出为 PNG 图片（2 倍清晰度）/ 导出文件 / 置顶 / 磁贴
+          - 回收站、实时搜索、自动保存 + 启动备份、纯本地存储
 
           ## 🖥 系统要求
 
           Windows 10 1809+ / Windows 11；云母与亚克力背景效果需要 Windows 11 22H2+。
 
           ---
-          English: A small & beautiful sticky-notes app for Windows. Drag files in to import, drag cards out to export as .txt, fully customizable themes with native Mica/Acrylic backdrop.
+          English: A small & beautiful sticky-notes app for Windows. Markdown live-split rendering, image notes, editable desktop tiles, quick notes, global hotkeys, fully customizable themes with native Mica/Acrylic backdrop.
           EOF
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release delete "$GITHUB_REF_NAME" --yes
