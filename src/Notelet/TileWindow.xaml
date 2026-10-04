@@ -24,6 +24,8 @@
             <TextBlock x:Name="TileTitle" Margin="12,0,0,0" FontSize="12.5" FontWeight="SemiBold"
                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" IsHitTestVisible="False"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="EditBtn" Content="&#xE70F;" Style="{StaticResource IconBtn}" Width="28" Height="28" FontSize="12"
+                        Click="EditBtn_Click" ToolTip="编辑内容（读写）"/>
                 <Button Content="&#xE8C8;" Style="{StaticResource IconBtn}" Width="28" Height="28" FontSize="12"
                         Click="CopyBtn_Click" ToolTip="复制全文"/>
                 <Button x:Name="TopBtn" Content="&#xE718;" Style="{StaticResource IconBtn}" Width="28" Height="28" FontSize="12"
@@ -39,7 +41,7 @@
         <!-- 底部 -->
         <Grid Grid.Row="2" Margin="12,0,12,8">
             <TextBlock x:Name="TileDate" FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"/>
-            <TextBlock Text="双击标题栏拖动 · 磁贴模式" FontSize="10" Foreground="{DynamicResource Sub.Brush}"
+            <TextBlock x:Name="TileHint" Text="双击标题栏拖动 · 磁贴模式" FontSize="10" Foreground="{DynamicResource Sub.Brush}"
                        Opacity="0.7" HorizontalAlignment="Right" IsHitTestVisible="False"/>
         </Grid>
     </Grid>

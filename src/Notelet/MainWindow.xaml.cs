@@ -41,6 +41,8 @@ public partial class MainWindow : Window
     const int HotKeyId = 0xB101;
     const int HotKeyQuickId = 0xB102;
     const int WM_HOTKEY = 0x0312;
+    const int WM_NCLBUTTONDBLCLK = 0x00A3;
+    const int HTCAPTION = 2;
     const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2;
 
     // 编辑预览态：note -> (文本变化回调, 预览控件)
@@ -117,6 +119,9 @@ public partial class MainWindow : Window
         SettingsRepo.Save(_settings);
 
         InitTray();
+
+        StateChanged += (_, __) => UpdateMaxGlyph();
+        Loaded += (_, __) => UpdateMaxGlyph();
 
         // 跟随系统深浅色
         Microsoft.Win32.SystemEvents.UserPreferenceChanged += (_, args) =>
@@ -195,7 +200,27 @@ public partial class MainWindow : Window
                 handled = true;
             }
         }
+        else if (msg == WM_NCLBUTTONDBLCLK && wParam.ToInt32() == HTCAPTION)
+        {
+            // 系统最大化样式已移除，标题栏双击由自己处理
+            ToggleMaximize();
+            handled = true;
+        }
         return IntPtr.Zero;
+    }
+
+    void ToggleMaximize()
+        => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+
+    void MaxBtn_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
+
+    void UpdateMaxGlyph()
+    {
+        bool max = WindowState == WindowState.Maximized;
+        MaxBtn.Content = max ? "\uE923" : "\uE922";
+        MaxBtn.ToolTip = max ? "还原" : "最大化 / 还原（双击标题栏）";
+        // 最大化时补偿 WindowChrome 的调整边框，避免内容溢出屏幕
+        RootBorder.Margin = max ? new Thickness(7) : new Thickness(0);
     }
 
     internal void ShowMain()
@@ -722,7 +747,7 @@ public partial class MainWindow : Window
     {
         var existing = Application.Current.Windows.OfType<TileWindow>().FirstOrDefault(t => t.Note == n);
         if (existing is not null) { existing.Activate(); return; }
-        var tile = new TileWindow(n);
+        var tile = new TileWindow(n, onChanged: () => _repo.MarkDirty());
         n.IsTiled = true;
         tile.Closed += (_, __) => n.IsTiled = false;
         tile.Show();

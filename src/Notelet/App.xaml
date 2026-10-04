@@ -31,6 +31,7 @@
 
         <!-- 图标按钮（顶栏 / 磁贴栏） -->
         <Style x:Key="IconBtn" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Width" Value="34"/>
             <Setter Property="Height" Value="34"/>
             <Setter Property="FontSize" Value="15"/>
@@ -72,6 +73,7 @@
 
         <!-- 可切换图标按钮（窗口置顶） -->
         <Style x:Key="IconToggle" TargetType="ToggleButton">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Width" Value="34"/>
             <Setter Property="Height" Value="34"/>
             <Setter Property="FontSize" Value="15"/>
@@ -127,6 +129,7 @@
 
         <!-- 带图标的菜单项（更多菜单 / 卡片右键菜单） -->
         <Style x:Key="IconMenuItem" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource Text.Brush}"/>
             <Setter Property="FontSize" Value="13"/>

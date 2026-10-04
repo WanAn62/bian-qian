@@ -10,7 +10,7 @@ using Notelet.Services;
 namespace Notelet;
 
 /// <summary>
-/// 磁贴窗口：把一张便签固定在桌面上随时速览/复制（模仿花笺的磁贴模式）。
+/// 磁贴窗口：把一张便签固定在桌面上随时速览/复制/编辑（模仿花笺的磁贴模式）。
 /// 随主题与卡片颜色联动，便签内容编辑后实时刷新，便签删除后自动关闭。
 /// </summary>
 public partial class TileWindow : Window
@@ -18,14 +18,17 @@ public partial class TileWindow : Window
     static int _cascade;
 
     readonly Note _note;
+    readonly Action? _onChanged;
     readonly DispatcherTimer _rebuild;
+    bool _editing;
 
     public Note Note => _note;
 
-    public TileWindow(Note note)
+    public TileWindow(Note note, Action? onChanged = null)
     {
         InitializeComponent();
         _note = note;
+        _onChanged = onChanged;
         Topmost = true;
 
         SourceInitialized += (_, __) =>
@@ -57,6 +60,7 @@ public partial class TileWindow : Window
         switch (e.PropertyName)
         {
             case nameof(Note.Text):
+                if (_editing) break; // 编辑中磁贴自己是数据源，避免重建打断输入
                 _rebuild.Stop();
                 _rebuild.Start();
                 break;
@@ -104,6 +108,56 @@ public partial class TileWindow : Window
         => TopBtn.Foreground = Topmost
             ? (Brush)Application.Current.Resources["Accent.Brush"]
             : (Brush)Application.Current.Resources["Text.Brush"];
+
+    // ─────────────── 磁贴内直接编辑（读写悬浮小窗） ───────────────
+
+    void EditBtn_Click(object sender, RoutedEventArgs e) => SetEditing(!_editing);
+
+    void SetEditing(bool on)
+    {
+        if (_editing == on) return;
+        _editing = on;
+
+        EditBtn.Foreground = on
+            ? (Brush)Application.Current.Resources["Accent.Brush"]
+            : (Brush)Application.Current.Resources["Text.Brush"];
+        TileHint.Text = on ? "编辑中：改动实时保存" : "双击标题栏拖动 · 磁贴模式";
+
+        if (on)
+        {
+            var fg = NoteCardConverter.FgBrushFor(_note.ColorKey);
+            var tb = new TextBox
+            {
+                AcceptsReturn = true,
+                TextWrapping = TextWrapping.Wrap,
+                BorderThickness = new Thickness(0),
+                Background = Brushes.Transparent,
+                MaxHeight = 400,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                FontSize = 13.5,
+                Foreground = fg,
+                CaretBrush = (Brush)Application.Current.Resources["Accent.Brush"],
+                SelectionBrush = (Brush)Application.Current.Resources["Accent.Brush"],
+            };
+            tb.SetBinding(TextBox.TextProperty, new System.Windows.Data.Binding(nameof(Note.Text))
+            {
+                Source = _note,
+                Mode = System.Windows.Data.BindingMode.TwoWay,
+                UpdateSourceTrigger = System.Windows.Data.UpdateSourceTrigger.PropertyChanged,
+            });
+            tb.TextChanged += (_, __) => _onChanged?.Invoke();
+            BodyHost.Children.Clear();
+            BodyHost.Children.Add(tb);
+            tb.Focus();
+            tb.CaretIndex = tb.Text.Length;
+        }
+        else
+        {
+            _note.UpdatedAt = DateTime.Now;
+            _onChanged?.Invoke();
+            RebuildBody();
+        }
+    }
 
     void CopyBtn_Click(object sender, RoutedEventArgs e)
     {
