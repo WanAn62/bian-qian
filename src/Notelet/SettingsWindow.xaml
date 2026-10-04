@@ -99,6 +99,12 @@
                         </DockPanel>
                         <TextBlock Text="数据仅保存在本机，不上传任何内容" FontSize="11.5"
                                    Foreground="{DynamicResource Sub.Brush}" Margin="0,12,0,0"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="导出全部便签" Style="{StaticResource FlatBtn}" FontSize="12"
+                                    Padding="10,5" Click="ExportAll_Click"/>
+                            <Button Content="导入便签备份" Style="{StaticResource FlatBtn}" FontSize="12"
+                                    Padding="10,5" Margin="8,0,0,0" Click="ImportAll_Click"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

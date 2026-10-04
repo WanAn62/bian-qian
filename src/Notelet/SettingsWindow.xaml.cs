@@ -108,6 +108,10 @@ public partial class SettingsWindow : Window
 
     void OpenData_Click(object sender, RoutedEventArgs e) => _mw.OpenDataFolder();
 
+    void ExportAll_Click(object sender, RoutedEventArgs e) => _mw.ExportAllNotes();
+
+    void ImportAll_Click(object sender, RoutedEventArgs e) => _mw.ImportNotesBackup();
+
     void OpenBackups_Click(object sender, RoutedEventArgs e)
     {
         try

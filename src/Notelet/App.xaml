@@ -14,6 +14,7 @@
         <SolidColorBrush x:Key="Field.Brush" Color="#66FFFFFF"/>
         <SolidColorBrush x:Key="Border.Brush" Color="#1A000000"/>
         <SolidColorBrush x:Key="ThumbBrush" Color="#2E000000"/>
+        <SolidColorBrush x:Key="Panel.Brush" Color="#0F000000"/>
 
         <CornerRadius x:Key="Radius.CornerRadius">14</CornerRadius>
         <sys:Double x:Key="BaseFontSize.Double">14</sys:Double>

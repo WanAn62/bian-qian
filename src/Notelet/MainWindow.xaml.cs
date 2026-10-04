@@ -26,6 +26,8 @@ public partial class MainWindow : Window
     ThemeConfig _theme = new();
 
     string _search = "";
+    string _filterMode = "all"; // all | pinned | trash
+    string? _colorFilter;
     int _colorIdx;
     bool _buildingPanel;
 
@@ -97,7 +99,8 @@ public partial class MainWindow : Window
         _settingsSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
         _settingsSaveTimer.Tick += (_, __) => { _settingsSaveTimer.Stop(); SettingsRepo.Save(_settings); };
 
-        RefreshView();
+        ApplyFilter();
+        VersionCaption.Text = $"简签 Notelet v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.3.0"}";
         SettingsRepo.Save(_settings);
 
         InitTray();
@@ -290,24 +293,93 @@ public partial class MainWindow : Window
     bool FilterNote(object o)
     {
         var n = (Note)o;
-        if (TrashMode) return n.Deleted;
-        if (n.Deleted) return false;
+        if (_filterMode == "trash")
+        {
+            if (!n.Deleted) return false;
+        }
+        else
+        {
+            if (n.Deleted) return false;
+            if (_filterMode == "pinned" && !n.Pinned) return false;
+        }
+        if (_colorFilter is not null && n.ColorKey != _colorFilter) return false;
         if (_search.Length == 0) return true;
         return n.Text.Contains(_search, StringComparison.OrdinalIgnoreCase);
+    }
+
+    void ApplyFilter()
+    {
+        TrashMode = _filterMode == "trash";
+        RefreshColorDots();
+        RefreshView();
+    }
+
+    void NavAll_Click(object sender, RoutedEventArgs e) { _filterMode = "all"; ApplyFilter(); }
+    void NavPinned_Click(object sender, RoutedEventArgs e) { _filterMode = "pinned"; ApplyFilter(); }
+    void NavTrash_Click(object sender, RoutedEventArgs e) { _filterMode = "trash"; ApplyFilter(); }
+
+    void RefreshColorDots()
+    {
+        ColorFilterPanel.Children.Clear();
+        foreach (var c in Palette.All)
+        {
+            bool selected = _colorFilter == c.Key;
+            var sw = new Border
+            {
+                Width = 20,
+                Height = 20,
+                CornerRadius = new CornerRadius(7),
+                Background = NoteCardConverter.BgBrushFor(c.Key),
+                Margin = new Thickness(0, 0, 6, 6),
+                Cursor = Cursors.Hand,
+                BorderThickness = new Thickness(selected ? 2 : 1),
+                BorderBrush = selected
+                    ? (Brush)Res("Accent.Brush")
+                    : (Brush)Res("Border.Brush"),
+                ToolTip = c.Name,
+            };
+            var key = c.Key;
+            sw.MouseLeftButtonDown += (_, e) =>
+            {
+                e.Handled = true;
+                _colorFilter = selected ? null : key;
+                ApplyFilter();
+            };
+            ColorFilterPanel.Children.Add(sw);
+        }
     }
 
     void RefreshView()
     {
         View.Refresh();
         int active = _repo.Items.Count(n => !n.Deleted);
+        int pinned = _repo.Items.Count(n => !n.Deleted && n.Pinned);
         int trash = _repo.Items.Count - active;
-        EmptyState.Visibility = !TrashMode && active == 0 ? Visibility.Visible : Visibility.Collapsed;
         TrashBanner.Visibility = TrashMode ? Visibility.Visible : Visibility.Collapsed;
         TrashCountText.Text = $"回收站 {trash} 条";
-        TrashBtn.Foreground = TrashMode
-            ? (Brush)Application.Current.Resources["Accent.Brush"]
-            : (Brush)Application.Current.Resources["Text.Brush"];
-        UpdateStatus();
+
+        NavAllBtn.IsChecked = _filterMode == "all";
+        NavPinnedBtn.IsChecked = _filterMode == "pinned";
+        NavTrashBtn.IsChecked = _filterMode == "trash";
+
+        bool empty = View.IsEmpty;
+        EmptyState.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
+        EmptyCta.Visibility = _filterMode == "all" ? Visibility.Visible : Visibility.Collapsed;
+        (EmptyTitle.Text, EmptyHint.Text) = _filterMode switch
+        {
+            "pinned" => ("没有置顶的便签", "在卡片悬浮按钮里点图钉即可置顶"),
+            "trash" => ("回收站是空的", "删除的便签会出现在这里，可随时恢复"),
+            _ => ("还没有便签", "双击空白处或按 Ctrl+N 新建；把 .txt / .md / 图片拖进来即可导入"),
+        };
+
+        StatusLeft.Text = _filterMode switch
+        {
+            "trash" => $"回收站 · {trash} 条",
+            "pinned" => $"已置顶 {pinned} 条 · 共 {active} 条便签",
+            _ => $"{active} 条便签 · 置顶 {pinned}",
+        };
+        if (_colorFilter is not null) StatusLeft.Text += " · 按颜色过滤";
+        StatusRight.Text = _repo.LastSaved is DateTime d ? $"已自动保存 {d:HH:mm:ss}" : "就绪";
     }
 
     void UpdateStatus()
@@ -406,7 +478,6 @@ public partial class MainWindow : Window
         RefreshView();
     }
 
-    void ExitTrash_Click(object s, RoutedEventArgs e) => TrashMode = false;
 
     void PinBtn_Click(object s, RoutedEventArgs e)
     {
@@ -795,12 +866,6 @@ public partial class MainWindow : Window
         SaveSettingsSoon();
     }
 
-    void AutostartToggle_Click(object sender, RoutedEventArgs e)
-    {
-        ApplyAutostart(!_settings.Autostart);
-        RefreshMenuToggles();
-    }
-
     static bool SystemIsDark()
     {
         try
@@ -823,12 +888,6 @@ public partial class MainWindow : Window
         ThemeService.ApplyBrushes(_theme);
         ThemeService.ApplyBackdrop(this);
         SettingsRepo.Save(_settings);
-    }
-
-    void FollowSystemToggle_Click(object sender, RoutedEventArgs e)
-    {
-        SetFollowSystem(!_settings.FollowSystem);
-        RefreshMenuToggles();
     }
 
     internal void SetFollowSystem(bool on)
@@ -887,7 +946,6 @@ public partial class MainWindow : Window
 
     void OpenSettings_Click(object sender, RoutedEventArgs e)
     {
-        MenuPopup.IsOpen = false;
         OpenSettings();
     }
 
@@ -897,14 +955,6 @@ public partial class MainWindow : Window
         if (existing is not null) { existing.Activate(); return; }
         new SettingsWindow(this).Show();
     }
-
-    void RefreshMenuToggles()
-    {
-        AutostartItem.Content = _settings.Autostart ? "开机自启  ✓" : "开机自启";
-        FollowSystemItem.Content = _settings.FollowSystem ? "跟随系统深浅色  ✓" : "跟随系统深浅色";
-    }
-
-    void MenuPopup_Opened(object sender, EventArgs e) => RefreshMenuToggles();
 
     static Border? CardRootOf(DependencyObject? d)
     {
@@ -954,7 +1004,6 @@ public partial class MainWindow : Window
 
     void ThemeBtn_Click(object sender, RoutedEventArgs e)
     {
-        MenuPopup.IsOpen = false;
         ThemePopup.IsOpen = !ThemePopup.IsOpen;
     }
 
@@ -965,12 +1014,10 @@ public partial class MainWindow : Window
         SaveSettingsSoon();
     }
 
-    void TrashBtn_Click(object sender, RoutedEventArgs e) => TrashMode = !TrashMode;
-
-    void MoreBtn_Click(object sender, RoutedEventArgs e)
+    void ExitTrash_Click(object sender, RoutedEventArgs e)
     {
-        ThemePopup.IsOpen = false;
-        MenuPopup.IsOpen = !MenuPopup.IsOpen;
+        _filterMode = "all";
+        ApplyFilter();
     }
 
     void MinBtn_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
@@ -993,7 +1040,6 @@ public partial class MainWindow : Window
 
     void OpenData_Click(object sender, RoutedEventArgs e)
     {
-        MenuPopup.IsOpen = false;
         OpenDataFolder();
     }
 
@@ -1011,9 +1057,8 @@ public partial class MainWindow : Window
         catch { }
     }
 
-    void ExportAll_Click(object sender, RoutedEventArgs e)
+    internal void ExportAllNotes()
     {
-        MenuPopup.IsOpen = false;
         var dlg = new Microsoft.Win32.SaveFileDialog
         {
             Filter = "JSON 备份|*.json",
@@ -1031,9 +1076,8 @@ public partial class MainWindow : Window
         }
     }
 
-    void ImportAll_Click(object sender, RoutedEventArgs e)
+    internal void ImportNotesBackup()
     {
-        MenuPopup.IsOpen = false;
         var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "JSON 备份|*.json" };
         if (dlg.ShowDialog(this) != true) return;
         var list = Json.Load<List<Note>>(dlg.FileName);
@@ -1065,7 +1109,6 @@ public partial class MainWindow : Window
 
     void About_Click(object sender, RoutedEventArgs e)
     {
-        MenuPopup.IsOpen = false;
         var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.0";
         MessageBox.Show(this,
             $"简签 Notelet v{ver}\n\n小而美的桌面便签。\n\n· 数据保存在 %APPDATA%\\Notelet\n· 纯本地存储，不上传任何内容\n· MIT 开源",
@@ -1107,7 +1150,8 @@ public partial class MainWindow : Window
         }
         else if (e.Key == Key.Escape && TrashMode)
         {
-            TrashMode = false;
+            _filterMode = "all";
+            ApplyFilter();
             e.Handled = true;
         }
     }

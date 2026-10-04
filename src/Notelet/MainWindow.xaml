@@ -4,7 +4,7 @@
         xmlns:m="clr-namespace:Notelet.Models"
         xmlns:local="clr-namespace:Notelet"
         xmlns:svc="clr-namespace:Notelet.Services"
-        Title="简签 Notelet" Width="1000" Height="680" MinWidth="620" MinHeight="440"
+        Title="简签 Notelet" Width="1080" Height="700" MinWidth="700" MinHeight="460"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource Bg.Brush}"
         Foreground="{DynamicResource Text.Brush}"
@@ -16,7 +16,7 @@
         Closing="Window_Closing">
 
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="52" ResizeBorderThickness="6" CornerRadius="0"
+        <WindowChrome CaptionHeight="54" ResizeBorderThickness="6" CornerRadius="0"
                       GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
     </WindowChrome.WindowChrome>
 
@@ -46,421 +46,603 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
         </Style>
+
+        <!-- 侧栏主导航项 -->
+        <Style x:Key="NavToggle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource Text.Brush}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="9" Padding="11,8">
+                            <DockPanel>
+                                <TextBlock x:Name="icon" DockPanel.Dock="Left" Text="{TemplateBinding Tag}"
+                                           FontFamily="{DynamicResource IconFont.FontFamily}" FontSize="14"
+                                           Foreground="{DynamicResource Sub.Brush}" VerticalAlignment="Center"/>
+                                <ContentPresenter VerticalAlignment="Center" Margin="10,0,0,0"
+                                                  RecognizesAccessKey="False"/>
+                            </DockPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource Field.Brush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource Field.Brush}"/>
+                                <Setter TargetName="icon" Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 侧栏普通项（无选中态，如「设置」） -->
+        <Style x:Key="NavItemBtn" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource Text.Brush}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="9" Padding="11,8">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Left" Text="{TemplateBinding Tag}"
+                                           FontFamily="{DynamicResource IconFont.FontFamily}" FontSize="14"
+                                           Foreground="{DynamicResource Sub.Brush}" VerticalAlignment="Center"/>
+                                <ContentPresenter VerticalAlignment="Center" Margin="10,0,0,0"
+                                                  RecognizesAccessKey="False"/>
+                            </DockPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource Field.Brush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.75"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 强调色主按钮 -->
+        <Style x:Key="AccentBtn" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource Accent.Brush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.78"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 幽灵按钮 -->
+        <Style x:Key="GhostBtn" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource Field.Brush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Text.Brush}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="10"
+                                BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource Accent.Brush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 侧栏分节标题 -->
+        <Style x:Key="SideLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Sub.Brush}"/>
+            <Setter Property="Margin" Value="11,0,0,7"/>
+        </Style>
     </Window.Resources>
 
     <Border x:Name="RootBorder">
         <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="52"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="30"/>
-            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="208"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-            <!-- ═══ 顶栏 ═══ -->
-            <Grid Grid.Row="0">
-                <Border VerticalAlignment="Bottom" Height="1" IsHitTestVisible="False"
-                        Background="{DynamicResource Border.Brush}" Opacity="0.55"/>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                    <Ellipse Width="11" Height="11" Fill="{DynamicResource Accent.Brush}" VerticalAlignment="Center"/>
-                    <TextBlock Text="简签" FontWeight="Bold" FontSize="15" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="Notelet" FontSize="12" Foreground="{DynamicResource Sub.Brush}"
-                               Margin="6,1,0,0" VerticalAlignment="Center"/>
-                </StackPanel>
+            <!-- ═══════════ 侧边栏 ═══════════ -->
+            <Border Grid.Column="0" Background="{DynamicResource Panel.Brush}"
+                    BorderBrush="{DynamicResource Border.Brush}" BorderThickness="0,0,1,0">
+                <DockPanel>
+                    <!-- 底部：设置 + 版本 -->
+                    <StackPanel DockPanel.Dock="Bottom" Margin="12,0,12,12">
+                        <Button Style="{StaticResource NavItemBtn}" Tag="&#xE713;" Content="设置"
+                                Click="OpenSettings_Click" ToolTip="打开设置中心"/>
+                        <TextBlock x:Name="VersionCaption" Text="简签 Notelet" FontSize="10.5"
+                                   Foreground="{DynamicResource Sub.Brush}" Margin="12,9,0,0"/>
+                    </StackPanel>
 
-                <Border Width="300" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center"
-                        Background="{DynamicResource Field.Brush}"
-                        BorderThickness="1" CornerRadius="15"
-                        WindowChrome.IsHitTestVisibleInChrome="True">
-                    <Border.Style>
-                        <Style TargetType="Border">
-                            <Setter Property="BorderBrush" Value="{DynamicResource Border.Brush}"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=SearchBox}" Value="True">
-                                    <Setter Property="BorderBrush" Value="{DynamicResource Accent.Brush}"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Border.Style>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#xE721;" FontFamily="{DynamicResource IconFont.FontFamily}" FontSize="12"
-                                   Foreground="{DynamicResource Sub.Brush}" Margin="11,0,0,0" VerticalAlignment="Center"/>
-                        <TextBox x:Name="SearchBox" Grid.Column="1" BorderThickness="0" Background="Transparent"
-                                 VerticalContentAlignment="Center" Margin="7,0,0,0" FontSize="13"
-                                 Foreground="{DynamicResource Text.Brush}" CaretBrush="{DynamicResource Accent.Brush}"
-                                 TextChanged="SearchBox_TextChanged"/>
-                        <TextBlock Grid.Column="1" Text="搜索便签（Ctrl+K）" FontSize="13"
-                                   Foreground="{DynamicResource Sub.Brush}" Margin="8,0,0,0"
-                                   VerticalAlignment="Center" IsHitTestVisible="False">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <Button x:Name="ClearSearchBtn" Grid.Column="2" Content="&#xE711;" FontSize="10"
-                                Style="{StaticResource IconBtn}" Width="24" Height="24" Margin="0,0,4,0"
-                                Visibility="Collapsed" Click="ClearSearch_Click"/>
-                    </Grid>
-                </Border>
+                    <!-- 品牌 -->
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="16,17,12,16">
+                        <Border Width="27" Height="27" CornerRadius="8" Background="{DynamicResource Accent.Brush}">
+                            <TextBlock Text="&#xE70B;" FontFamily="{DynamicResource IconFont.FontFamily}" FontSize="13"
+                                       Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="简签" FontWeight="Bold" FontSize="14.5" Margin="9,0,0,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Notelet" FontSize="11" Foreground="{DynamicResource Sub.Brush}"
+                                   Margin="5,1,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0" HorizontalAlignment="Right"
+                    <!-- 主操作 -->
+                    <StackPanel DockPanel.Dock="Top" Margin="12,0,12,4">
+                        <Button Content="＋ 新建便签" Style="{StaticResource AccentBtn}" Height="37"
+                                Click="NewBtn_Click" ToolTip="Ctrl+N"/>
+                        <Button Content="快速便签" Style="{StaticResource GhostBtn}" Height="34" Margin="0,8,0,0"
+                                Click="QuickBtn_Click" ToolTip="Ctrl+Alt+Q，可多开"/>
+                    </StackPanel>
+
+                    <!-- 导航 + 颜色 -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12,12,12,8">
+                        <StackPanel>
+                            <TextBlock Text="视图" Style="{StaticResource SideLabel}"/>
+                            <ToggleButton x:Name="NavAllBtn" Style="{StaticResource NavToggle}" Tag="&#xE70B;"
+                                          Content="全部便签" IsChecked="True" Click="NavAll_Click"/>
+                            <ToggleButton x:Name="NavPinnedBtn" Style="{StaticResource NavToggle}" Tag="&#xE718;"
+                                          Content="已置顶" Margin="0,3,0,0" Click="NavPinned_Click"/>
+                            <ToggleButton x:Name="NavTrashBtn" Style="{StaticResource NavToggle}" Tag="&#xE74D;"
+                                          Content="回收站" Margin="0,3,0,0" Click="NavTrash_Click"/>
+
+                            <TextBlock Text="按颜色" Style="{StaticResource SideLabel}" Margin="11,18,0,8"/>
+                            <WrapPanel x:Name="ColorFilterPanel"/>
+                            <TextBlock x:Name="ColorFilterHint" Text="点色点过滤，再点一次取消"
+                                       FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"
+                                       Opacity="0.8" Margin="11,8,0,0"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <!-- ═══════════ 主区 ═══════════ -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="54"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="28"/>
+                </Grid.RowDefinitions>
+
+                <!-- 主区顶栏 -->
+                <Grid Grid.Row="0">
+                    <Border VerticalAlignment="Bottom" Height="1" IsHitTestVisible="False"
+                            Background="{DynamicResource Border.Brush}" Opacity="0.55"/>
+                    <Border Width="330" Height="32" HorizontalAlignment="Left" VerticalAlignment="Center"
+                            Margin="18,0,0,0"
+                            Background="{DynamicResource Field.Brush}"
+                            BorderThickness="1" CornerRadius="16"
                             WindowChrome.IsHitTestVisibleInChrome="True">
-                    <Button Content="&#xE710;" Style="{StaticResource IconBtn}" Click="NewBtn_Click" ToolTip="新建便签（Ctrl+N）"/>
-                    <Button Content="&#xE70F;" Style="{StaticResource IconBtn}" Click="QuickBtn_Click" ToolTip="快速便签（Ctrl+Alt+Q）"/>
-                    <Button x:Name="ThemeBtn" Content="&#xE790;" Style="{StaticResource IconBtn}" Click="ThemeBtn_Click" ToolTip="美化"/>
-                    <ToggleButton x:Name="PinWinBtn" Content="&#xE718;" Style="{StaticResource IconToggle}"
-                                  Click="PinWinBtn_Click" ToolTip="窗口置顶"/>
-                    <Button x:Name="TrashBtn" Content="&#xE74D;" Style="{StaticResource IconBtn}" Click="TrashBtn_Click" ToolTip="回收站"/>
-                    <Button x:Name="MoreBtn" Content="&#xE712;" Style="{StaticResource IconBtn}" Click="MoreBtn_Click" ToolTip="更多"/>
-                    <Rectangle Width="1" Height="18" Fill="{DynamicResource Border.Brush}" Margin="6,0"/>
-                    <Button Content="&#xE921;" Style="{StaticResource IconBtn}" Click="MinBtn_Click" ToolTip="最小化"/>
-                    <Button Content="&#xE8BB;" Style="{StaticResource CloseBtn}" Click="CloseBtn_Click" ToolTip="关闭"/>
-                </StackPanel>
-            </Grid>
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="BorderBrush" Value="{DynamicResource Border.Brush}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=SearchBox}" Value="True">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource Accent.Brush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="&#xE721;" FontFamily="{DynamicResource IconFont.FontFamily}" FontSize="12"
+                                       Foreground="{DynamicResource Sub.Brush}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                            <TextBox x:Name="SearchBox" Grid.Column="1" BorderThickness="0" Background="Transparent"
+                                     VerticalContentAlignment="Center" Margin="8,0,0,0" FontSize="13"
+                                     Foreground="{DynamicResource Text.Brush}" CaretBrush="{DynamicResource Accent.Brush}"
+                                     TextChanged="SearchBox_TextChanged"/>
+                            <TextBlock Grid.Column="1" Text="搜索便签（Ctrl+K）" FontSize="13"
+                                       Foreground="{DynamicResource Sub.Brush}" Margin="9,0,0,0"
+                                       VerticalAlignment="Center" IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <Button x:Name="ClearSearchBtn" Grid.Column="2" Content="&#xE711;" FontSize="10"
+                                    Style="{StaticResource IconBtn}" Width="24" Height="24" Margin="0,0,5,0"
+                                    Visibility="Collapsed" Click="ClearSearch_Click"/>
+                        </Grid>
+                    </Border>
 
-            <!-- ═══ 卡片区 ═══ -->
-            <Grid Grid.Row="1">
-                <ScrollViewer x:Name="CardsScroll" VerticalScrollBarVisibility="Auto" Padding="16,4,16,12"
-                              MouseLeftButtonDown="Canvas_MouseDown">
-                    <ItemsControl x:Name="CardsList">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel VerticalAlignment="Top" HorizontalAlignment="Left"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type m:Note}">
-                                <Border x:Name="CardRoot"
-                                        Width="{DynamicResource CardWidth.Double}"
-                                        CornerRadius="{DynamicResource Radius.CornerRadius}"
-                                        Background="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=bg}"
-                                        BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
-                                        Margin="0,0,16,16" Cursor="Hand"
-                                        RenderTransformOrigin="0.5,0.5"
-                                        MouseLeftButtonDown="Card_MouseDown" MouseMove="Card_MouseMove"
-                                        MouseRightButtonUp="Card_RightClick"
-                                        LostKeyboardFocus="Card_LostFocus">
-                                    <Border.RenderTransform>
-                                        <ScaleTransform x:Name="CardScale" ScaleX="1" ScaleY="1"/>
-                                    </Border.RenderTransform>
-                                    <Border.Triggers>
-                                        <EventTrigger RoutedEvent="MouseEnter">
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" To="1.02" Duration="0:0:0.12"/>
-                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" To="1.02" Duration="0:0:0.12"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-                                        <EventTrigger RoutedEvent="MouseLeave">
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" To="1" Duration="0:0:0.15"/>
-                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" To="1" Duration="0:0:0.15"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-                                    </Border.Triggers>
-                                    <Border.Style>
-                                        <Style TargetType="Border">
-                                            <Setter Property="Effect" Value="{StaticResource CardRest.Shadow}"/>
-                                            <Style.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Effect" Value="{StaticResource CardHover.Shadow}"/>
-                                                </Trigger>
-                                                <DataTrigger Binding="{Binding IsEditing}" Value="True">
-                                                    <Setter Property="Cursor" Value="IBeam"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding Deleted}" Value="True">
-                                                    <Setter Property="Opacity" Value="0.55"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Border.Style>
-                                    <StackPanel Margin="16,13,14,12">
-                                        <!-- 浏览态 -->
-                                        <StackPanel x:Name="ViewPart">
-                                            <TextBlock Text="{Binding Title}"
-                                                       FontSize="{DynamicResource TitleSize.Double}" FontWeight="SemiBold"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}"/>
-                                            <TextBlock Text="{Binding Body}" Margin="0,6,0,0"
-                                                       FontSize="{DynamicResource BaseFontSize.Double}"
-                                                       LineHeight="{DynamicResource LineHeight.Double}"
-                                                       TextWrapping="Wrap" MaxHeight="{DynamicResource BodyMax.Double}"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=sub}"
-                                                       svc:MarkdownBody.Enable="True"/>
-                                            <ItemsControl ItemsSource="{Binding ImageFiles}"
-                                                          Visibility="{Binding ImageFiles, Converter={StaticResource CollConv}}"
-                                                          Margin="0,8,0,0">
-                                                <ItemsControl.ItemsPanel>
-                                                    <ItemsPanelTemplate>
-                                                        <WrapPanel/>
-                                                    </ItemsPanelTemplate>
-                                                </ItemsControl.ItemsPanel>
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Border CornerRadius="8" ClipToBounds="True" Margin="0,0,6,6"
-                                                                Cursor="Hand" MouseLeftButtonDown="CardImage_Click"
-                                                                ToolTip="点击查看原图">
-                                                            <Image Source="{Binding Converter={StaticResource ImgConv}}"
-                                                                   MaxHeight="96" MaxWidth="104" Stretch="Uniform"/>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                            <Grid Margin="0,10,0,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="{Binding UpdatedAt, StringFormat=yyyy/MM/dd HH:mm}" FontSize="11"
-                                                           VerticalAlignment="Center"
-                                                           Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=sub}"/>
-                                                <StackPanel x:Name="NormalOps" Grid.Column="1" Orientation="Horizontal">
-                                                    <Button Content="MD" FontFamily="Microsoft YaHei UI" Click="MdBtn_Click" ToolTip="以 Markdown 渲染">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button" BasedOn="{StaticResource CardBtn}">
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsMarkdown}" Value="True">
-                                                                        <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Button.Style>
-                                                    </Button>
-                                                    <Button Content="&#xE718;" Click="PinBtn_Click" ToolTip="置顶">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button" BasedOn="{StaticResource CardBtn}">
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Pinned}" Value="True">
-                                                                        <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Button.Style>
-                                                    </Button>
-                                                    <Button Style="{StaticResource CardBtn}" Content="&#xE790;" Click="ColorBtn_Click" ToolTip="颜色"/>
-                                                    <Button Style="{StaticResource CardBtn}" Content="&#xE74D;" Click="DelBtn_Click" ToolTip="删除"/>
-                                                    <Button Content="&#xE842;" Click="TileBtn_Click" ToolTip="磁贴：贴在桌面速览" FontSize="12">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button" BasedOn="{StaticResource CardBtn}">
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsTiled}" Value="True">
-                                                                        <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Button.Style>
-                                                    </Button>
-                                                </StackPanel>
-                                                <StackPanel x:Name="TrashOps" Grid.Column="1" Orientation="Horizontal" Visibility="Collapsed">
-                                                    <Button Style="{StaticResource CardBtn}" Content="&#xE7A7;" Click="RestoreBtn_Click" ToolTip="恢复"/>
-                                                    <Button Style="{StaticResource CardBtn}" Content="&#xE74D;" Click="PurgeBtn_Click" ToolTip="彻底删除"/>
-                                                </StackPanel>
-                                            </Grid>
-                                        </StackPanel>
-                                        <!-- 编辑态 -->
-                                        <StackPanel x:Name="EditPart" Visibility="Collapsed">
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <TextBox x:Name="Editor" Grid.Row="0"
-                                                         Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
-                                                         AcceptsReturn="True" TextWrapping="Wrap"
-                                                         BorderThickness="0" Background="Transparent"
-                                                         MinHeight="110" MaxHeight="430" VerticalScrollBarVisibility="Auto"
-                                                         FontSize="{DynamicResource BaseFontSize.Double}"
-                                                         Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}"
-                                                         CaretBrush="{DynamicResource Accent.Brush}"
-                                                         SelectionBrush="{DynamicResource Accent.Brush}"
-                                                         KeyDown="Editor_KeyDown">
-                                                    <TextBox.Style>
-                                                        <Style TargetType="TextBox">
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
-                                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBox.Style>
-                                                </TextBox>
-                                                <RichTextBox x:Name="PreviewBox" Grid.Row="1"
-                                                             IsReadOnly="True" IsDocumentEnabled="True"
-                                                             BorderThickness="0" Background="Transparent" Padding="0"
-                                                             MinHeight="110" VerticalScrollBarVisibility="Auto"
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                Margin="0,0,10,0"
+                                WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Button x:Name="ThemeBtn" Content="&#xE790;" Style="{StaticResource IconBtn}"
+                                Click="ThemeBtn_Click" ToolTip="美化"/>
+                        <ToggleButton x:Name="PinWinBtn" Content="&#xE718;" Style="{StaticResource IconToggle}"
+                                      Click="PinWinBtn_Click" ToolTip="窗口置顶"/>
+                        <Rectangle Width="1" Height="18" Fill="{DynamicResource Border.Brush}" Margin="7,0"/>
+                        <Button Content="&#xE921;" Style="{StaticResource IconBtn}" Click="MinBtn_Click" ToolTip="最小化"/>
+                        <Button Content="&#xE8BB;" Style="{StaticResource CloseBtn}" Click="CloseBtn_Click" ToolTip="关闭"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 卡片区 -->
+                <Grid Grid.Row="1">
+                    <ScrollViewer x:Name="CardsScroll" VerticalScrollBarVisibility="Auto" Padding="18,8,18,14"
+                                  MouseLeftButtonDown="Canvas_MouseDown">
+                        <ItemsControl x:Name="CardsList">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel VerticalAlignment="Top" HorizontalAlignment="Left"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type m:Note}">
+                                    <Border x:Name="CardRoot"
+                                            Width="{DynamicResource CardWidth.Double}"
+                                            CornerRadius="{DynamicResource Radius.CornerRadius}"
+                                            Background="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=bg}"
+                                            BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
+                                            Margin="0,0,16,16" Cursor="Hand"
+                                            RenderTransformOrigin="0.5,0.5"
+                                            MouseLeftButtonDown="Card_MouseDown" MouseMove="Card_MouseMove"
+                                            MouseRightButtonUp="Card_RightClick"
+                                            LostKeyboardFocus="Card_LostFocus">
+                                        <Border.RenderTransform>
+                                            <ScaleTransform x:Name="CardScale" ScaleX="1" ScaleY="1"/>
+                                        </Border.RenderTransform>
+                                        <Border.Triggers>
+                                            <EventTrigger RoutedEvent="MouseEnter">
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" To="1.02" Duration="0:0:0.12"/>
+                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" To="1.02" Duration="0:0:0.12"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </EventTrigger>
+                                            <EventTrigger RoutedEvent="MouseLeave">
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" To="1" Duration="0:0:0.15"/>
+                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" To="1" Duration="0:0:0.15"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </EventTrigger>
+                                        </Border.Triggers>
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Effect" Value="{StaticResource CardRest.Shadow}"/>
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Effect" Value="{StaticResource CardHover.Shadow}"/>
+                                                    </Trigger>
+                                                    <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                        <Setter Property="Cursor" Value="IBeam"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Deleted}" Value="True">
+                                                        <Setter Property="Opacity" Value="0.55"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel Margin="16,13,14,12">
+                                            <!-- 浏览态 -->
+                                            <StackPanel x:Name="ViewPart">
+                                                <TextBlock Text="{Binding Title}"
+                                                           FontSize="{DynamicResource TitleSize.Double}" FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}"/>
+                                                <TextBlock Text="{Binding Body}" Margin="0,6,0,0"
+                                                           FontSize="{DynamicResource BaseFontSize.Double}"
+                                                           LineHeight="{DynamicResource LineHeight.Double}"
+                                                           TextWrapping="Wrap" MaxHeight="{DynamicResource BodyMax.Double}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=sub}"
+                                                           svc:MarkdownBody.Enable="True"/>
+                                                <ItemsControl ItemsSource="{Binding ImageFiles}"
+                                                              Visibility="{Binding ImageFiles, Converter={StaticResource CollConv}}"
+                                                              Margin="0,8,0,0">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel/>
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border CornerRadius="8" ClipToBounds="True" Margin="0,0,6,6"
+                                                                    Cursor="Hand" MouseLeftButtonDown="CardImage_Click"
+                                                                    ToolTip="点击查看原图">
+                                                                <Image Source="{Binding Converter={StaticResource ImgConv}}"
+                                                                       MaxHeight="96" MaxWidth="104" Stretch="Uniform"/>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <Grid Margin="0,10,0,0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding UpdatedAt, StringFormat=yyyy/MM/dd HH:mm}" FontSize="11"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=sub}"/>
+                                                    <StackPanel x:Name="NormalOps" Grid.Column="1" Orientation="Horizontal">
+                                                        <Button Content="MD" FontFamily="Microsoft YaHei UI" Click="MdBtn_Click" ToolTip="以 Markdown 渲染">
+                                                            <Button.Style>
+                                                                <Style TargetType="Button" BasedOn="{StaticResource CardBtn}">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsMarkdown}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                        <Button Content="&#xE718;" Click="PinBtn_Click" ToolTip="置顶">
+                                                            <Button.Style>
+                                                                <Style TargetType="Button" BasedOn="{StaticResource CardBtn}">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Pinned}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                        <Button Style="{StaticResource CardBtn}" Content="&#xE790;" Click="ColorBtn_Click" ToolTip="颜色"/>
+                                                        <Button Style="{StaticResource CardBtn}" Content="&#xE74D;" Click="DelBtn_Click" ToolTip="删除"/>
+                                                        <Button Content="&#xE842;" Click="TileBtn_Click" ToolTip="磁贴：贴在桌面速览" FontSize="12">
+                                                            <Button.Style>
+                                                                <Style TargetType="Button" BasedOn="{StaticResource CardBtn}">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsTiled}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                    </StackPanel>
+                                                    <StackPanel x:Name="TrashOps" Grid.Column="1" Orientation="Horizontal" Visibility="Collapsed">
+                                                        <Button Style="{StaticResource CardBtn}" Content="&#xE7A7;" Click="RestoreBtn_Click" ToolTip="恢复"/>
+                                                        <Button Style="{StaticResource CardBtn}" Content="&#xE74D;" Click="PurgeBtn_Click" ToolTip="彻底删除"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </StackPanel>
+                                            <!-- 编辑态 -->
+                                            <StackPanel x:Name="EditPart" Visibility="Collapsed">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <TextBox x:Name="Editor" Grid.Row="0"
+                                                             Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                                             AcceptsReturn="True" TextWrapping="Wrap"
+                                                             BorderThickness="0" Background="Transparent"
+                                                             MinHeight="110" MaxHeight="430" VerticalScrollBarVisibility="Auto"
                                                              FontSize="{DynamicResource BaseFontSize.Double}"
-                                                             Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}">
-                                                    <RichTextBox.Style>
-                                                        <Style TargetType="RichTextBox">
-                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                            <Setter Property="MaxHeight" Value="430"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
-                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding IsSplit}" Value="True">
-                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                    <Setter Property="MaxHeight" Value="240"/>
-                                                                    <Setter Property="MinHeight" Value="90"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </RichTextBox.Style>
-                                                </RichTextBox>
-                                            </Grid>
-                                            <DockPanel Margin="0,6,0,0">
-                                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                                                    <Button Content="MD" FontFamily="Microsoft YaHei UI" Click="MdBtn_Click" ToolTip="以 Markdown 渲染">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button" BasedOn="{StaticResource EditChip}">
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsMarkdown}" Value="True">
-                                                                        <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Button.Style>
-                                                    </Button>
-                                                    <Button Content="预览" Click="PreviewBtn_Click" ToolTip="切换 编辑 / 预览" Margin="6,0,0,0">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button" BasedOn="{StaticResource EditChip}">
+                                                             Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}"
+                                                             CaretBrush="{DynamicResource Accent.Brush}"
+                                                             SelectionBrush="{DynamicResource Accent.Brush}"
+                                                             KeyDown="Editor_KeyDown">
+                                                        <TextBox.Style>
+                                                            <Style TargetType="TextBox">
                                                                 <Style.Triggers>
                                                                     <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
-                                                                        <Setter Property="Content" Value="编辑"/>
-                                                                        <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
                                                             </Style>
-                                                        </Button.Style>
-                                                    </Button>
-                                                    <Button Content="分屏" Click="SplitBtn_Click" ToolTip="编辑 + 实时渲染同屏（输入即渲染）" Margin="6,0,0,0">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button" BasedOn="{StaticResource EditChip}">
+                                                        </TextBox.Style>
+                                                    </TextBox>
+                                                    <RichTextBox x:Name="PreviewBox" Grid.Row="1"
+                                                                 IsReadOnly="True" IsDocumentEnabled="True"
+                                                                 BorderThickness="0" Background="Transparent" Padding="0"
+                                                                 MinHeight="110" VerticalScrollBarVisibility="Auto"
+                                                                 FontSize="{DynamicResource BaseFontSize.Double}"
+                                                                 Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}">
+                                                        <RichTextBox.Style>
+                                                            <Style TargetType="RichTextBox">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Setter Property="MaxHeight" Value="430"/>
                                                                 <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
                                                                     <DataTrigger Binding="{Binding IsSplit}" Value="True">
-                                                                        <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                        <Setter Property="MaxHeight" Value="240"/>
+                                                                        <Setter Property="MinHeight" Value="90"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
                                                             </Style>
-                                                        </Button.Style>
-                                                    </Button>
+                                                        </RichTextBox.Style>
+                                                    </RichTextBox>
+                                                </Grid>
+                                                <DockPanel Margin="0,6,0,0">
+                                                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                                                        <Button Content="MD" FontFamily="Microsoft YaHei UI" Click="MdBtn_Click" ToolTip="以 Markdown 渲染">
+                                                            <Button.Style>
+                                                                <Style TargetType="Button" BasedOn="{StaticResource EditChip}">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsMarkdown}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                        <Button Content="预览" Click="PreviewBtn_Click" ToolTip="切换 编辑 / 预览" Margin="6,0,0,0">
+                                                            <Button.Style>
+                                                                <Style TargetType="Button" BasedOn="{StaticResource EditChip}">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
+                                                                            <Setter Property="Content" Value="编辑"/>
+                                                                            <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                        <Button Content="分屏" Click="SplitBtn_Click" ToolTip="编辑 + 实时渲染同屏（输入即渲染）" Margin="6,0,0,0">
+                                                            <Button.Style>
+                                                                <Style TargetType="Button" BasedOn="{StaticResource EditChip}">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsSplit}" Value="True">
+                                                                            <Setter Property="Foreground" Value="{DynamicResource Accent.Brush}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                        <TextBlock FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"
+                                                                   VerticalAlignment="Center" Margin="8,0,0,0"
+                                                                   Text="{Binding Text.Length, StringFormat={}{0} 字}"/>
+                                                    </StackPanel>
                                                     <TextBlock FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"
-                                                               VerticalAlignment="Center" Margin="8,0,0,0"
-                                                               Text="{Binding Text.Length, StringFormat={}{0} 字}"/>
-                                                </StackPanel>
-                                                <TextBlock FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"
-                                                           HorizontalAlignment="Right" VerticalAlignment="Center"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           Text="Ctrl+Enter 完成 · Esc 关闭 · 首行为标题">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
-                                                                    <Setter Property="Text" Value="预览中：点击任务框可直接勾选"/>
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding IsSplit}" Value="True">
-                                                                    <Setter Property="Text" Value="分屏实时渲染中：输入即所见"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                            </DockPanel>
+                                                               HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Text="Ctrl+Enter 完成 · Esc 关闭 · 首行为标题">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
+                                                                        <Setter Property="Text" Value="预览中：点击任务框可直接勾选"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsSplit}" Value="True">
+                                                                        <Setter Property="Text" Value="分屏实时渲染中：输入即所见"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </DockPanel>
+                                            </StackPanel>
                                         </StackPanel>
-                                    </StackPanel>
-                                </Border>
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding IsEditing}" Value="True">
-                                        <Setter TargetName="ViewPart" Property="Visibility" Value="Collapsed"/>
-                                        <Setter TargetName="EditPart" Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding TrashMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                        <Setter TargetName="NormalOps" Property="Visibility" Value="Collapsed"/>
-                                        <Setter TargetName="TrashOps" Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                            <Setter TargetName="ViewPart" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="EditPart" Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding TrashMode, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                            <Setter TargetName="NormalOps" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="TrashOps" Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
 
-                <!-- 空状态：叠卡插画 -->
-                <StackPanel x:Name="EmptyState" IsHitTestVisible="False"
-                            HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Grid Width="124" Height="94" HorizontalAlignment="Center">
-                        <Border Width="64" Height="78" CornerRadius="10" Background="{DynamicResource Card.Brush}"
-                                BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
-                                RenderTransformOrigin="0.5,0.5" Opacity="0.7">
-                            <Border.RenderTransform>
-                                <RotateTransform Angle="-10"/>
-                            </Border.RenderTransform>
-                        </Border>
-                        <Border Width="64" Height="78" CornerRadius="10" Background="{DynamicResource Card.Brush}"
-                                BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
-                                RenderTransformOrigin="0.5,0.5" Opacity="0.85">
-                            <Border.RenderTransform>
-                                <RotateTransform Angle="10"/>
-                            </Border.RenderTransform>
-                        </Border>
-                        <Border Width="66" Height="80" CornerRadius="10" Background="{DynamicResource Card.Brush}"
-                                BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
-                                Effect="{StaticResource CardHover.Shadow}">
-                            <StackPanel Margin="13,13,13,10" IsHitTestVisible="False">
-                                <Ellipse Width="10" Height="10" Fill="{DynamicResource Accent.Brush}" HorizontalAlignment="Left"/>
-                                <Rectangle Height="4" RadiusX="2" RadiusY="2" Fill="{DynamicResource ThumbBrush}"
-                                           Margin="0,11,0,0" HorizontalAlignment="Left" Width="32"/>
-                                <Rectangle Height="4" RadiusX="2" RadiusY="2" Fill="{DynamicResource ThumbBrush}"
-                                           Margin="0,9,0,0" HorizontalAlignment="Left" Width="36"/>
-                                <Rectangle Height="4" RadiusX="2" RadiusY="2" Fill="{DynamicResource ThumbBrush}"
-                                           Opacity="0.55" Margin="0,9,0,0" HorizontalAlignment="Left" Width="26"/>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                    <TextBlock Text="还没有便签" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,16,0,0"/>
-                    <TextBlock Text="双击空白处或按 Ctrl+N 新建；把 .txt / .md / 图片拖进来即可导入"
-                               FontSize="12.5" Foreground="{DynamicResource Sub.Brush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
-                </StackPanel>
-
-                <!-- 回收站横幅 -->
-                <Border x:Name="TrashBanner" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Top"
-                        Margin="0,10,0,0" Background="{DynamicResource Card.Brush}" BorderBrush="{DynamicResource Border.Brush}"
-                        BorderThickness="1" CornerRadius="18" Padding="14,7" Effect="{StaticResource CardHover.Shadow}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE74D;" FontFamily="{DynamicResource IconFont.FontFamily}" FontSize="12"
-                                   Foreground="{DynamicResource Accent.Brush}" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="TrashCountText" Text="回收站 0 条" Margin="8,0,0,0" FontSize="12.5" VerticalAlignment="Center"/>
-                        <Button Content="清空回收站" FontSize="12" Foreground="{DynamicResource Accent.Brush}"
-                                Style="{StaticResource FlatBtn}" Padding="10,2" Margin="12,0,0,0" Click="EmptyTrash_Click"/>
-                        <Button Content="退出回收站" FontSize="12" Foreground="{DynamicResource Sub.Brush}"
-                                Style="{StaticResource FlatBtn}" Padding="10,2" Click="ExitTrash_Click"/>
+                    <!-- 空状态（随视图变化） -->
+                    <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Grid Width="124" Height="94" HorizontalAlignment="Center" IsHitTestVisible="False">
+                            <Border Width="64" Height="78" CornerRadius="10" Background="{DynamicResource Card.Brush}"
+                                    BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
+                                    RenderTransformOrigin="0.5,0.5" Opacity="0.7">
+                                <Border.RenderTransform>
+                                    <RotateTransform Angle="-10"/>
+                                </Border.RenderTransform>
+                            </Border>
+                            <Border Width="64" Height="78" CornerRadius="10" Background="{DynamicResource Card.Brush}"
+                                    BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
+                                    RenderTransformOrigin="0.5,0.5" Opacity="0.85">
+                                <Border.RenderTransform>
+                                    <RotateTransform Angle="10"/>
+                                </Border.RenderTransform>
+                            </Border>
+                            <Border Width="66" Height="80" CornerRadius="10" Background="{DynamicResource Card.Brush}"
+                                    BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
+                                    Effect="{StaticResource CardHover.Shadow}">
+                                <StackPanel Margin="13,13,13,10" IsHitTestVisible="False">
+                                    <Ellipse Width="10" Height="10" Fill="{DynamicResource Accent.Brush}" HorizontalAlignment="Left"/>
+                                    <Rectangle Height="4" RadiusX="2" RadiusY="2" Fill="{DynamicResource ThumbBrush}"
+                                               Margin="0,11,0,0" HorizontalAlignment="Left" Width="32"/>
+                                    <Rectangle Height="4" RadiusX="2" RadiusY="2" Fill="{DynamicResource ThumbBrush}"
+                                               Margin="0,9,0,0" HorizontalAlignment="Left" Width="36"/>
+                                    <Rectangle Height="4" RadiusX="2" RadiusY="2" Fill="{DynamicResource ThumbBrush}"
+                                               Opacity="0.55" Margin="0,9,0,0" HorizontalAlignment="Left" Width="26"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        <TextBlock x:Name="EmptyTitle" Text="还没有便签" FontSize="16" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" Margin="0,16,0,0" IsHitTestVisible="False"/>
+                        <TextBlock x:Name="EmptyHint" FontSize="12.5" Foreground="{DynamicResource Sub.Brush}"
+                                   HorizontalAlignment="Center" Margin="0,6,0,0" IsHitTestVisible="False"
+                                   Text="双击空白处或按 Ctrl+N 新建"/>
+                        <Button x:Name="EmptyCta" Content="＋ 新建第一张便签" Style="{StaticResource AccentBtn}"
+                                Height="36" Padding="22,0" Margin="0,16,0,0" Click="NewBtn_Click"/>
                     </StackPanel>
-                </Border>
-            </Grid>
 
-            <!-- ═══ 状态栏 ═══ -->
-            <Grid Grid.Row="2" Margin="16,0">
-                <StackPanel Orientation="Horizontal">
-                    <Ellipse Width="6" Height="6" Fill="{DynamicResource Accent.Brush}" Opacity="0.9"
-                             VerticalAlignment="Center"/>
-                    <TextBlock x:Name="StatusLeft" FontSize="11.5" Foreground="{DynamicResource Sub.Brush}"
-                               VerticalAlignment="Center" Margin="8,0,0,0"/>
-                </StackPanel>
-                <TextBlock x:Name="StatusRight" FontSize="11.5" Foreground="{DynamicResource Sub.Brush}"
-                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    <!-- 回收站横幅 -->
+                    <Border x:Name="TrashBanner" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Top"
+                            Margin="0,10,0,0" Background="{DynamicResource Card.Brush}" BorderBrush="{DynamicResource Border.Brush}"
+                            BorderThickness="1" CornerRadius="18" Padding="14,7" Effect="{StaticResource CardHover.Shadow}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE74D;" FontFamily="{DynamicResource IconFont.FontFamily}" FontSize="12"
+                                       Foreground="{DynamicResource Accent.Brush}" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TrashCountText" Text="回收站 0 条" Margin="8,0,0,0" FontSize="12.5" VerticalAlignment="Center"/>
+                            <Button Content="清空回收站" FontSize="12" Foreground="{DynamicResource Accent.Brush}"
+                                    Style="{StaticResource FlatBtn}" Padding="10,2" Margin="12,0,0,0" Click="EmptyTrash_Click"/>
+                            <Button Content="退出回收站" FontSize="12" Foreground="{DynamicResource Sub.Brush}"
+                                    Style="{StaticResource FlatBtn}" Padding="10,2" Click="ExitTrash_Click"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- 状态栏 -->
+                <Grid Grid.Row="2" Margin="18,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="6" Height="6" Fill="{DynamicResource Accent.Brush}" Opacity="0.9"
+                                 VerticalAlignment="Center"/>
+                        <TextBlock x:Name="StatusLeft" FontSize="11.5" Foreground="{DynamicResource Sub.Brush}"
+                                   VerticalAlignment="Center" Margin="8,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock x:Name="StatusRight" FontSize="11.5" Foreground="{DynamicResource Sub.Brush}"
+                               VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                </Grid>
             </Grid>
 
             <!-- ═══ 美化面板（内容在代码中构建） ═══ -->
@@ -472,25 +654,6 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,6,10,12">
                         <StackPanel x:Name="ThemePanelRoot"/>
                     </ScrollViewer>
-                </Border>
-            </Popup>
-
-            <!-- ═══ 更多菜单 ═══ -->
-            <Popup x:Name="MenuPopup" PlacementTarget="{Binding ElementName=MoreBtn}" Placement="Bottom"
-                   StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" Opened="MenuPopup_Opened">
-                <Border Width="228" Background="{DynamicResource Card.Brush}" BorderBrush="{DynamicResource Border.Brush}"
-                        BorderThickness="1" CornerRadius="12" Effect="{StaticResource CardHover.Shadow}" Margin="8,0,8,10" Padding="6">
-                    <StackPanel>
-                        <Button Tag="&#xE713;" Content="设置" Style="{StaticResource IconMenuItem}" Click="OpenSettings_Click"/>
-                        <Button Tag="&#xE7E8;" x:Name="AutostartItem" Content="开机自启" Style="{StaticResource IconMenuItem}" Click="AutostartToggle_Click"/>
-                        <Button Tag="&#xE706;" x:Name="FollowSystemItem" Content="跟随系统深浅色" Style="{StaticResource IconMenuItem}" Click="FollowSystemToggle_Click"/>
-                        <Rectangle Height="1" Fill="{DynamicResource Border.Brush}" Margin="8,4"/>
-                        <Button Tag="&#xE8B7;" Content="打开数据文件夹" Style="{StaticResource IconMenuItem}" Click="OpenData_Click"/>
-                        <Button Tag="&#xE74E;" Content="导出全部便签" Style="{StaticResource IconMenuItem}" Click="ExportAll_Click"/>
-                        <Button Tag="&#xE8E5;" Content="导入便签备份" Style="{StaticResource IconMenuItem}" Click="ImportAll_Click"/>
-                        <Rectangle Height="1" Fill="{DynamicResource Border.Brush}" Margin="8,4"/>
-                        <Button Tag="&#xE946;" Content="关于 简签" Style="{StaticResource IconMenuItem}" Click="About_Click"/>
-                    </StackPanel>
                 </Border>
             </Popup>
         </Grid>
