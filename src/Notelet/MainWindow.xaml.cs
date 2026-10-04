@@ -52,6 +52,15 @@ public partial class MainWindow : Window
     [DllImport("user32.dll")]
     static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
+    [DllImport("user32.dll")]
+    static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+    const int GWL_STYLE = -16;
+    const int WS_MAXIMIZEBOX = 0x00010000;
+
     public ListCollectionView View { get; }
     public static readonly DependencyProperty TrashModeProperty = DependencyProperty.Register(
         nameof(TrashMode), typeof(bool), typeof(MainWindow),
@@ -94,6 +103,10 @@ public partial class MainWindow : Window
             RegisterHotKey(hwnd, HotKeyId, MOD_CONTROL | MOD_ALT, 0x4E);
             RegisterHotKey(hwnd, HotKeyQuickId, MOD_CONTROL | MOD_ALT, 0x51);
             HwndSource.FromHwnd(hwnd)?.AddHook(WndProc);
+
+            // 关闭系统最大化贴靠：拖到屏幕顶部不再弹贴靠预览（便签窗口用不上）
+            int style = GetWindowLong(hwnd, GWL_STYLE);
+            SetWindowLong(hwnd, GWL_STYLE, style & ~WS_MAXIMIZEBOX);
         };
 
         _settingsSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
