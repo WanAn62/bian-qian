@@ -66,9 +66,19 @@
                 </StackPanel>
 
                 <Border Width="300" Height="30" HorizontalAlignment="Center" VerticalAlignment="Center"
-                        Background="{DynamicResource Field.Brush}" BorderBrush="{DynamicResource Border.Brush}"
+                        Background="{DynamicResource Field.Brush}"
                         BorderThickness="1" CornerRadius="15"
                         WindowChrome.IsHitTestVisibleInChrome="True">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="BorderBrush" Value="{DynamicResource Border.Brush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=SearchBox}" Value="True">
+                                    <Setter Property="BorderBrush" Value="{DynamicResource Accent.Brush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -108,7 +118,7 @@
                     <Button x:Name="ThemeBtn" Content="&#xE790;" Style="{StaticResource IconBtn}" Click="ThemeBtn_Click" ToolTip="美化"/>
                     <ToggleButton x:Name="PinWinBtn" Content="&#xE718;" Style="{StaticResource IconToggle}"
                                   Click="PinWinBtn_Click" ToolTip="窗口置顶"/>
-                    <Button Content="&#xE74D;" Style="{StaticResource IconBtn}" Click="TrashBtn_Click" ToolTip="回收站"/>
+                    <Button x:Name="TrashBtn" Content="&#xE74D;" Style="{StaticResource IconBtn}" Click="TrashBtn_Click" ToolTip="回收站"/>
                     <Button x:Name="MoreBtn" Content="&#xE712;" Style="{StaticResource IconBtn}" Click="MoreBtn_Click" ToolTip="更多"/>
                     <Rectangle Width="1" Height="18" Fill="{DynamicResource Border.Brush}" Margin="6,0"/>
                     <Button Content="&#xE921;" Style="{StaticResource IconBtn}" Click="MinBtn_Click" ToolTip="最小化"/>
@@ -134,19 +144,31 @@
                                         Background="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=bg}"
                                         BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
                                         Margin="0,0,14,14" Cursor="Hand"
+                                        RenderTransformOrigin="0.5,0.5"
                                         MouseLeftButtonDown="Card_MouseDown" MouseMove="Card_MouseMove"
+                                        MouseRightButtonUp="Card_RightClick"
                                         LostKeyboardFocus="Card_LostFocus">
-                                    <Border.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="置顶 / 取消置顶" Click="MenuPin_Click"/>
-                                            <MenuItem Header="磁贴速览" Click="MenuTile_Click"/>
-                                            <MenuItem Header="复制全文" Click="MenuCopy_Click"/>
-                                            <MenuItem Header="导出为图片…" Click="MenuPng_Click"/>
-                                            <MenuItem Header="导出为文件…" Click="MenuFile_Click"/>
-                                            <Separator/>
-                                            <MenuItem Header="删除" Click="MenuDel_Click"/>
-                                        </ContextMenu>
-                                    </Border.ContextMenu>
+                                    <Border.RenderTransform>
+                                        <ScaleTransform x:Name="CardScale" ScaleX="1" ScaleY="1"/>
+                                    </Border.RenderTransform>
+                                    <Border.Triggers>
+                                        <EventTrigger RoutedEvent="MouseEnter">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" To="1.02" Duration="0:0:0.12"/>
+                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" To="1.02" Duration="0:0:0.12"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                        <EventTrigger RoutedEvent="MouseLeave">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX" To="1" Duration="0:0:0.15"/>
+                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY" To="1" Duration="0:0:0.15"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Border.Triggers>
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Style.Triggers>
@@ -330,17 +352,40 @@
                     </ItemsControl>
                 </ScrollViewer>
 
-                <!-- 空状态 -->
+                <!-- 空状态：叠卡插画 -->
                 <StackPanel x:Name="EmptyState" IsHitTestVisible="False"
                             HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Border Width="64" Height="64" CornerRadius="16" Background="{DynamicResource Field.Brush}"
-                            HorizontalAlignment="Center">
-                        <TextBlock Text="&#xE70B;" FontFamily="{DynamicResource IconFont.FontFamily}" FontSize="28"
-                                   Foreground="{DynamicResource Accent.Brush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <TextBlock Text="还没有便签" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,14,0,0"/>
-                    <TextBlock Text="双击空白处或按 Ctrl+N 新建；把 .txt / .md 文件拖进来即可导入"
+                    <Grid Width="124" Height="94" HorizontalAlignment="Center">
+                        <Border Width="64" Height="78" CornerRadius="10" Background="{DynamicResource Card.Brush}"
+                                BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
+                                RenderTransformOrigin="0.5,0.5" Opacity="0.7">
+                            <Border.RenderTransform>
+                                <RotateTransform Angle="-10"/>
+                            </Border.RenderTransform>
+                        </Border>
+                        <Border Width="64" Height="78" CornerRadius="10" Background="{DynamicResource Card.Brush}"
+                                BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
+                                RenderTransformOrigin="0.5,0.5" Opacity="0.85">
+                            <Border.RenderTransform>
+                                <RotateTransform Angle="10"/>
+                            </Border.RenderTransform>
+                        </Border>
+                        <Border Width="66" Height="80" CornerRadius="10" Background="{DynamicResource Card.Brush}"
+                                BorderBrush="{DynamicResource Border.Brush}" BorderThickness="1"
+                                Effect="{StaticResource CardHover.Shadow}">
+                            <StackPanel Margin="13,13,13,10" IsHitTestVisible="False">
+                                <Ellipse Width="10" Height="10" Fill="{DynamicResource Accent.Brush}" HorizontalAlignment="Left"/>
+                                <Rectangle Height="4" RadiusX="2" RadiusY="2" Fill="{DynamicResource ThumbBrush}"
+                                           Margin="0,11,0,0" HorizontalAlignment="Left" Width="32"/>
+                                <Rectangle Height="4" RadiusX="2" RadiusY="2" Fill="{DynamicResource ThumbBrush}"
+                                           Margin="0,9,0,0" HorizontalAlignment="Left" Width="36"/>
+                                <Rectangle Height="4" RadiusX="2" RadiusY="2" Fill="{DynamicResource ThumbBrush}"
+                                           Opacity="0.55" Margin="0,9,0,0" HorizontalAlignment="Left" Width="26"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    <TextBlock Text="还没有便签" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,16,0,0"/>
+                    <TextBlock Text="双击空白处或按 Ctrl+N 新建；把 .txt / .md / 图片拖进来即可导入"
                                FontSize="12.5" Foreground="{DynamicResource Sub.Brush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                 </StackPanel>
 
@@ -382,16 +427,18 @@
             <!-- ═══ 更多菜单 ═══ -->
             <Popup x:Name="MenuPopup" PlacementTarget="{Binding ElementName=MoreBtn}" Placement="Bottom"
                    StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" Opened="MenuPopup_Opened">
-                <Border Width="212" Background="{DynamicResource Card.Brush}" BorderBrush="{DynamicResource Border.Brush}"
+                <Border Width="228" Background="{DynamicResource Card.Brush}" BorderBrush="{DynamicResource Border.Brush}"
                         BorderThickness="1" CornerRadius="12" Effect="{StaticResource CardHover.Shadow}" Margin="8,0,8,10" Padding="6">
                     <StackPanel>
-                        <Button x:Name="AutostartItem" Content="开机自启" Style="{StaticResource FlatBtn}" Click="AutostartToggle_Click"/>
-                        <Button x:Name="FollowSystemItem" Content="跟随系统深浅色" Style="{StaticResource FlatBtn}" Click="FollowSystemToggle_Click"/>
-                        <Separator Margin="6,2"/>
-                        <Button Content="打开数据文件夹" Style="{StaticResource FlatBtn}" Click="OpenData_Click"/>
-                        <Button Content="导出全部便签" Style="{StaticResource FlatBtn}" Click="ExportAll_Click"/>
-                        <Button Content="导入便签备份" Style="{StaticResource FlatBtn}" Click="ImportAll_Click"/>
-                        <Button Content="关于 简签" Style="{StaticResource FlatBtn}" Click="About_Click"/>
+                        <Button Tag="&#xE713;" Content="设置" Style="{StaticResource IconMenuItem}" Click="OpenSettings_Click"/>
+                        <Button Tag="&#xE7E8;" x:Name="AutostartItem" Content="开机自启" Style="{StaticResource IconMenuItem}" Click="AutostartToggle_Click"/>
+                        <Button Tag="&#xE706;" x:Name="FollowSystemItem" Content="跟随系统深浅色" Style="{StaticResource IconMenuItem}" Click="FollowSystemToggle_Click"/>
+                        <Rectangle Height="1" Fill="{DynamicResource Border.Brush}" Margin="8,4"/>
+                        <Button Tag="&#xE8B7;" Content="打开数据文件夹" Style="{StaticResource IconMenuItem}" Click="OpenData_Click"/>
+                        <Button Tag="&#xE74E;" Content="导出全部便签" Style="{StaticResource IconMenuItem}" Click="ExportAll_Click"/>
+                        <Button Tag="&#xE8E5;" Content="导入便签备份" Style="{StaticResource IconMenuItem}" Click="ImportAll_Click"/>
+                        <Rectangle Height="1" Fill="{DynamicResource Border.Brush}" Margin="8,4"/>
+                        <Button Tag="&#xE946;" Content="关于 简签" Style="{StaticResource IconMenuItem}" Click="About_Click"/>
                     </StackPanel>
                 </Border>
             </Popup>

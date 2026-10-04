@@ -34,6 +34,7 @@ public static class ThemeService
         r["Accent.Brush"] = Brush(t.Accent);
         r["Field.Brush"] = BrushAlpha(t.IsDark ? "#FFFFFF" : "#FFFFFF", (byte)(t.IsDark ? 0x16 : 0x66));
         r["Border.Brush"] = BrushAlpha(t.IsDark ? "#FFFFFF" : "#000000", (byte)(t.IsDark ? 0x22 : 0x1A));
+        r["ThumbBrush"] = t.IsDark ? BrushAlpha("#FFFFFF", 0x33) : BrushAlpha("#000000", 0x2E);
         r["Radius.CornerRadius"] = new CornerRadius(t.Radius);
         r["BaseFontSize.Double"] = t.FontSize;
         r["TitleSize.Double"] = t.FontSize + 1.5;

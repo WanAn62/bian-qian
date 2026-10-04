@@ -109,6 +109,10 @@ public partial class MainWindow : Window
                 Dispatcher.BeginInvoke(ApplySystemTheme);
         };
         if (_settings.FollowSystem) ApplySystemTheme();
+
+        // 支持 Notelet.exe --settings 直接打开设置
+        if (Environment.GetCommandLineArgs().Any(a => string.Equals(a, "--settings", StringComparison.OrdinalIgnoreCase)))
+            Loaded += (_, __) => OpenSettings();
     }
 
     // ───────────────────────── 托盘 / 全局热键（随呼随用） ─────────────────────────
@@ -128,6 +132,7 @@ public partial class MainWindow : Window
 
             var menu = new WinForms.ContextMenuStrip();
             menu.Items.Add("打开 简签", null, (_, __) => ShowMain());
+            menu.Items.Add("设置", null, (_, __) => { ShowMain(); OpenSettings(); });
             menu.Items.Add("新建便签", null, (_, __) => { ShowMain(); NewNote(); });
             menu.Items.Add("快速便签", null, (_, __) => NewQuickNote());
             menu.Items.Add(new WinForms.ToolStripSeparator());
@@ -177,7 +182,7 @@ public partial class MainWindow : Window
         return IntPtr.Zero;
     }
 
-    void ShowMain()
+    internal void ShowMain()
     {
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
@@ -299,6 +304,9 @@ public partial class MainWindow : Window
         EmptyState.Visibility = !TrashMode && active == 0 ? Visibility.Visible : Visibility.Collapsed;
         TrashBanner.Visibility = TrashMode ? Visibility.Visible : Visibility.Collapsed;
         TrashCountText.Text = $"回收站 {trash} 条";
+        TrashBtn.Foreground = TrashMode
+            ? (Brush)Application.Current.Resources["Accent.Brush"]
+            : (Brush)Application.Current.Resources["Text.Brush"];
         UpdateStatus();
     }
 
@@ -626,44 +634,81 @@ public partial class MainWindow : Window
         tile.Show();
     }
 
-    // ───────────────────────── 卡片右键菜单 ─────────────────────────
+    // ───────────────────────── 卡片右键菜单（自绘主题化） ─────────────────────────
 
-    Note? MenuNote(object sender)
-        => (sender as MenuItem)?.Parent is ContextMenu cm && cm.PlacementTarget is Border { DataContext: Note n } ? n : null;
-
-    void MenuPin_Click(object sender, RoutedEventArgs e)
+    void Card_RightClick(object sender, MouseButtonEventArgs e)
     {
-        if (MenuNote(sender) is not Note n) return;
-        n.Pinned = !n.Pinned;
-        n.UpdatedAt = DateTime.Now;
-        _repo.MarkDirty();
-        View.Refresh();
+        if (sender is not Border { DataContext: Note n } || n.Deleted) return;
+        ShowCardMenu(n);
     }
 
-    void MenuTile_Click(object sender, RoutedEventArgs e)
+    void ShowCardMenu(Note n)
     {
-        if (MenuNote(sender) is not Note n) return;
-        OpenTile(n);
+        var popup = new Popup
+        {
+            StaysOpen = false,
+            Placement = PlacementMode.MousePoint,
+            AllowsTransparency = true,
+            PopupAnimation = PopupAnimation.Fade,
+        };
+        var stack = new StackPanel();
+        stack.Children.Add(MenuItemBtn(popup, "置顶 / 取消置顶", "\uE718", () =>
+        {
+            n.Pinned = !n.Pinned;
+            n.UpdatedAt = DateTime.Now;
+            _repo.MarkDirty();
+            View.Refresh();
+        }));
+        stack.Children.Add(MenuItemBtn(popup, "磁贴速览", "\uE842", () => OpenTile(n)));
+        stack.Children.Add(MenuItemBtn(popup, "复制全文", "\uE8C8", () => { try { Clipboard.SetText(n.Text); } catch { } }));
+        stack.Children.Add(MenuItemBtn(popup, "导出为图片…", "\uE8B9", () => ExportPng(n)));
+        stack.Children.Add(MenuItemBtn(popup, n.IsMarkdown ? "导出为 .md…" : "导出为 .txt…", "\uE74E", () => ExportNoteFile(n)));
+        stack.Children.Add(new Rectangle
+        {
+            Height = 1,
+            Fill = (Brush)Res("Border.Brush"),
+            Margin = new Thickness(8, 4, 8, 4),
+        });
+        stack.Children.Add(MenuItemBtn(popup, "删除", "\uE74D", () =>
+        {
+            n.IsEditing = false;
+            n.Deleted = true;
+            _repo.MarkDirty();
+            RefreshView();
+        }));
+
+        popup.Child = new Border
+        {
+            Background = (Brush)Res("Card.Brush"),
+            BorderBrush = (Brush)Res("Border.Brush"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(12),
+            Margin = new Thickness(8, 4, 8, 10),
+            Padding = new Thickness(6),
+            Effect = (System.Windows.Media.Effects.DropShadowEffect)Res("CardHover.Shadow"),
+            Child = stack,
+        };
+        popup.IsOpen = true;
     }
 
-    void MenuCopy_Click(object sender, RoutedEventArgs e)
+    Button MenuItemBtn(Popup popup, string label, string glyph, Action click)
     {
-        if (MenuNote(sender) is not Note n) return;
-        try { Clipboard.SetText(n.Text); } catch { }
+        var b = new Button
+        {
+            Content = label,
+            Tag = glyph,
+            Style = (Style)Res("IconMenuItem"),
+        };
+        b.Click += (_, __) =>
+        {
+            popup.IsOpen = false;
+            click();
+        };
+        return b;
     }
 
-    void MenuDel_Click(object sender, RoutedEventArgs e)
+    void ExportNoteFile(Note n)
     {
-        if (MenuNote(sender) is not Note n) return;
-        n.IsEditing = false;
-        n.Deleted = true;
-        _repo.MarkDirty();
-        RefreshView();
-    }
-
-    void MenuFile_Click(object sender, RoutedEventArgs e)
-    {
-        if (MenuNote(sender) is not Note n) return;
         var dlg = new Microsoft.Win32.SaveFileDialog
         {
             Filter = n.IsMarkdown ? "Markdown|*.md" : "文本文件|*.txt",
@@ -686,9 +731,8 @@ public partial class MainWindow : Window
         }
     }
 
-    void MenuPng_Click(object sender, RoutedEventArgs e)
+    void ExportPng(Note n)
     {
-        if (MenuNote(sender) is not Note n) return;
         if (CardsList.ItemContainerGenerator.ContainerFromItem(n) is not ContentPresenter cp) return;
         if (FindDescendant<Border>(cp) is not Border card || card.ActualWidth < 10) return;
 
@@ -727,7 +771,7 @@ public partial class MainWindow : Window
 
     const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
-    void ApplyAutostart(bool on)
+    internal void ApplyAutostart(bool on)
     {
         try
         {
@@ -773,10 +817,75 @@ public partial class MainWindow : Window
 
     void FollowSystemToggle_Click(object sender, RoutedEventArgs e)
     {
-        _settings.FollowSystem = !_settings.FollowSystem;
-        SaveSettingsSoon();
+        SetFollowSystem(!_settings.FollowSystem);
         RefreshMenuToggles();
-        if (_settings.FollowSystem) ApplySystemTheme();
+    }
+
+    internal void SetFollowSystem(bool on)
+    {
+        _settings.FollowSystem = on;
+        SaveSettingsSoon();
+        if (on) ApplySystemTheme();
+    }
+
+    // ───────────────────────── 设置窗口 ─────────────────────────
+
+    internal AppSettings Settings => _settings;
+    internal string CurrentThemeName => _theme.Name;
+
+    internal void SetCloseToTray(bool on)
+    {
+        _settings.CloseToTray = on;
+        SaveSettingsSoon();
+    }
+
+    internal void SetTopmost(bool on)
+    {
+        Topmost = on;
+        PinWinBtn.IsChecked = on;
+        _settings.Topmost = on;
+        SaveSettingsSoon();
+    }
+
+    internal void OpenThemePanel()
+    {
+        ThemePopup.IsOpen = true;
+    }
+
+    internal int BackupCount()
+    {
+        try { return Directory.GetFiles(Paths.BackupDir, "notes-*.json").Length; }
+        catch { return 0; }
+    }
+
+    internal int CleanBackups()
+    {
+        try
+        {
+            var files = Directory.GetFiles(Paths.BackupDir, "notes-*.json")
+                                 .OrderByDescending(f => f, StringComparer.Ordinal).ToArray();
+            int removed = 0;
+            for (int i = 10; i < files.Length; i++)
+            {
+                File.Delete(files[i]);
+                removed++;
+            }
+            return removed;
+        }
+        catch { return 0; }
+    }
+
+    void OpenSettings_Click(object sender, RoutedEventArgs e)
+    {
+        MenuPopup.IsOpen = false;
+        OpenSettings();
+    }
+
+    internal void OpenSettings()
+    {
+        var existing = Application.Current.Windows.OfType<SettingsWindow>().FirstOrDefault();
+        if (existing is not null) { existing.Activate(); return; }
+        new SettingsWindow(this).Show();
     }
 
     void RefreshMenuToggles()
@@ -875,12 +984,21 @@ public partial class MainWindow : Window
     void OpenData_Click(object sender, RoutedEventArgs e)
     {
         MenuPopup.IsOpen = false;
+        OpenDataFolder();
+    }
+
+    internal void OpenDataFolder()
+    {
         Paths.Ensure();
-        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        try
         {
-            FileName = Paths.Root,
-            UseShellExecute = true,
-        });
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = Paths.Root,
+                UseShellExecute = true,
+            });
+        }
+        catch { }
     }
 
     void ExportAll_Click(object sender, RoutedEventArgs e)
