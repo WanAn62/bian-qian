@@ -507,8 +507,9 @@ public partial class MainWindow : Window
     {
         var dead = _repo.Items.Where(n => n.Deleted).ToList();
         if (dead.Count == 0) return;
-        if (MessageBox.Show(this, $"彻底删除回收站中的 {dead.Count} 条便签？此操作不可恢复。",
-                "简签 Notelet", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+        if (!Dialog.Confirm(this, "清空回收站",
+                $"彻底删除回收站中的 {dead.Count} 条便签？此操作不可恢复。",
+                "彻底删除", danger: true)) return;
         foreach (var n in dead)
         {
             DeleteNoteFiles(n);
@@ -670,7 +671,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"导入失败：{ex.Message}", "简签 Notelet");
+            Dialog.Warn(this, "导入失败", ex.Message);
         }
     }
 
@@ -848,7 +849,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"导出失败：{ex.Message}", "简签 Notelet");
+            Dialog.Warn(this, "导出失败", ex.Message);
         }
     }
 
@@ -884,7 +885,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"导出失败：{ex.Message}", "简签 Notelet");
+            Dialog.Warn(this, "导出失败", ex.Message);
         }
     }
 
@@ -1108,11 +1109,11 @@ public partial class MainWindow : Window
         try
         {
             Json.Save(dlg.FileName, _repo.Items);
-            MessageBox.Show(this, $"已导出 {_repo.Items.Count} 条便签。\n{dlg.FileName}", "简签 Notelet");
+            Dialog.Info(this, "导出成功", $"已导出 {_repo.Items.Count} 条便签。");
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"导出失败：{ex.Message}", "简签 Notelet");
+            Dialog.Warn(this, "导出失败", ex.Message);
         }
     }
 
@@ -1123,7 +1124,7 @@ public partial class MainWindow : Window
         var list = Json.Load<List<Note>>(dlg.FileName);
         if (list is null || list.Count == 0)
         {
-            MessageBox.Show(this, "没有可导入的便签。", "简签 Notelet");
+            Dialog.Info(this, "导入便签", "没有可导入的便签。");
             return;
         }
         var ids = _repo.Items.Select(n => n.Id).ToHashSet();
@@ -1144,15 +1145,14 @@ public partial class MainWindow : Window
         }
         _repo.MarkDirty();
         RefreshView();
-        MessageBox.Show(this, $"已导入 {added} 条便签。", "简签 Notelet");
+        Dialog.Info(this, "导入完成", $"已导入 {added} 条便签。");
     }
 
     void About_Click(object sender, RoutedEventArgs e)
     {
-        var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.0";
-        MessageBox.Show(this,
-            $"简签 Notelet v{ver}\n\n小而美的桌面便签。\n\n· 数据保存在 %APPDATA%\\Notelet\n· 纯本地存储，不上传任何内容\n· MIT 开源",
-            "关于 简签", MessageBoxButton.OK, MessageBoxImage.Information);
+        var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.3.0";
+        Dialog.Info(this, "关于 简签",
+            $"简签 Notelet v{ver}\n\n小而美的桌面便签。\n\n· 数据保存在 %APPDATA%\\Notelet\n· 纯本地存储，不上传任何内容\n· MIT 开源");
     }
 
     // ───────────────────────── 快捷键 / 画布 ─────────────────────────
@@ -1571,7 +1571,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"导出失败：{ex.Message}", "简签 Notelet");
+            Dialog.Warn(this, "导出失败", ex.Message);
         }
     }
 
@@ -1582,7 +1582,7 @@ public partial class MainWindow : Window
         var t = Json.Load<ThemeConfig>(dlg.FileName);
         if (t is null)
         {
-            MessageBox.Show(this, "主题文件无效。", "简签 Notelet");
+            Dialog.Warn(this, "导入主题", "主题文件无效。");
             return;
         }
         try
@@ -1596,7 +1596,7 @@ public partial class MainWindow : Window
         }
         catch
         {
-            MessageBox.Show(this, "主题文件中的颜色格式不正确。", "简签 Notelet");
+            Dialog.Warn(this, "导入主题", "主题文件中的颜色格式不正确。");
             return;
         }
         t.Radius = Math.Clamp(t.Radius, 0, 24);
