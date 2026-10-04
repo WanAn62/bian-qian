@@ -62,6 +62,7 @@ public partial class MainWindow : Window
 
     const int GWL_STYLE = -16;
     const int WS_MAXIMIZEBOX = 0x00010000;
+    const int WS_SYSMENU = 0x00080000;
 
     public ListCollectionView View { get; }
     public static readonly DependencyProperty TrashModeProperty = DependencyProperty.Register(
@@ -106,9 +107,10 @@ public partial class MainWindow : Window
             RegisterHotKey(hwnd, HotKeyQuickId, MOD_CONTROL | MOD_ALT, 0x51);
             HwndSource.FromHwnd(hwnd)?.AddHook(WndProc);
 
-            // 关闭系统最大化贴靠：拖到屏幕顶部不再弹贴靠预览（便签窗口用不上）
+            // 关闭系统最大化贴靠；并去掉原生标题栏按钮——
+            // 云母/亚克力材质下 Win11 会额外绘制一套原生按钮，与自绘按钮叠成重影
             int style = GetWindowLong(hwnd, GWL_STYLE);
-            SetWindowLong(hwnd, GWL_STYLE, style & ~WS_MAXIMIZEBOX);
+            SetWindowLong(hwnd, GWL_STYLE, style & ~(WS_MAXIMIZEBOX | WS_SYSMENU));
         };
 
         _settingsSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
