@@ -14,6 +14,7 @@ public class Note : INotifyPropertyChanged
     bool _tiled;
     bool _split;
     bool _deleted;
+    DateTime? _remindAt;
 
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
 
@@ -21,7 +22,26 @@ public class Note : INotifyPropertyChanged
     public bool IsMarkdown
     {
         get => _isMarkdown;
-        set { if (_isMarkdown == value) return; _isMarkdown = value; OnP(); }
+        set
+        {
+            if (_isMarkdown == value) return;
+            _isMarkdown = value;
+            OnP();
+            OnP(nameof(TaskProgress));
+            OnP(nameof(TaskPercent));
+        }
+    }
+
+    public DateTime? RemindAt
+    {
+        get => _remindAt;
+        set
+        {
+            if (_remindAt == value) return;
+            _remindAt = value;
+            OnP();
+            OnP(nameof(RemindText));
+        }
     }
 
     public string Text
@@ -34,6 +54,8 @@ public class Note : INotifyPropertyChanged
             OnP();
             OnP(nameof(Title));
             OnP(nameof(Body));
+            OnP(nameof(TaskProgress));
+            OnP(nameof(TaskPercent));
         }
     }
 
@@ -41,6 +63,61 @@ public class Note : INotifyPropertyChanged
 
     /// <summary>附带的图片文件名（存于 %APPDATA%\Notelet\images）。</summary>
     public List<string> ImageFiles { get; set; } = new();
+
+    /// <summary>提醒是否已触发过（防止重复弹通知）。</summary>
+    public bool Reminded { get; set; }
+
+    /// <summary>该便签的字号缩放（0.7 ~ 2.0，Ctrl+滚轮调整）。</summary>
+    public double Zoom { get; set; } = 1.0;
+
+    /// <summary>提醒状态文案（供卡片显示；空 = 不显示）。</summary>
+    [JsonIgnore]
+    public string RemindText
+    {
+        get
+        {
+            if (RemindAt is null) return "";
+            if (Reminded) return "⏰ 已到期";
+            var t = RemindAt.Value;
+            return t.Year == DateTime.Now.Year
+                ? $"⏰ {t:MM/dd HH:mm}"
+                : $"⏰ {t:yyyy/MM/dd HH:mm}";
+        }
+    }
+
+    /// <summary>Markdown 任务清单进度（如 "2/5"；无任务时为空）。</summary>
+    [JsonIgnore]
+    public string TaskProgress
+    {
+        get
+        {
+            if (!IsMarkdown) return "";
+            int total = 0, done = 0;
+            foreach (var line in _text.Replace("\r", "").Split('\n'))
+            {
+                var t = line.TrimStart();
+                if (t.StartsWith("- [ ] ") || t.StartsWith("- [X] ") || t.StartsWith("- [x] "))
+                {
+                    total++;
+                    if (t[3] != ' ') done++;
+                }
+            }
+            return total == 0 ? "" : $"{done}/{total}";
+        }
+    }
+
+    /// <summary>任务进度百分比（0-100，无任务 -1，供进度条绑定）。</summary>
+    [JsonIgnore]
+    public int TaskPercent
+    {
+        get
+        {
+            var p = TaskProgress;
+            if (p == "") return -1;
+            var parts = p.Split('/');
+            return (int)(double.Parse(parts[0]) / double.Parse(parts[1]) * 100);
+        }
+    }
 
     public bool Pinned
     {

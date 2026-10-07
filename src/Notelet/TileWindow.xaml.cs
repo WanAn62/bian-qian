@@ -1,8 +1,10 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using Notelet.Models;
 using Notelet.Services;
@@ -100,8 +102,17 @@ public partial class TileWindow : Window
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             FontSize = 13.5,
         };
-        box.Document = Markdown.FlowDoc(_note, fg, sub, accent, codeBg, codeBg, 13.5);
+        box.PreviewMouseWheel += TileWheel;
+        box.Document = Markdown.FlowDoc(_note, fg, sub, accent, codeBg, codeBg, 13.5 * Math.Clamp(_note.Zoom, 0.7, 2.0));
         BodyHost.Children.Add(box);
+    }
+
+    void TileWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (!System.Windows.Input.Keyboard.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Control)) return;
+        _note.Zoom = Math.Round(Math.Clamp(_note.Zoom + (e.Delta > 0 ? 0.1 : -0.1), 0.7, 2.0), 2);
+        RebuildBody();
+        e.Handled = true;
     }
 
     void UpdateTopVisual()
@@ -146,6 +157,18 @@ public partial class TileWindow : Window
                 UpdateSourceTrigger = System.Windows.Data.UpdateSourceTrigger.PropertyChanged,
             });
             tb.TextChanged += (_, __) => _onChanged?.Invoke();
+            tb.LayoutTransform = Math.Abs(_note.Zoom - 1.0) < 0.01
+                ? Transform.Identity
+                : new ScaleTransform(_note.Zoom, _note.Zoom);
+            tb.PreviewMouseWheel += (_, ev) =>
+            {
+                if (!System.Windows.Input.Keyboard.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Control)) return;
+                _note.Zoom = Math.Round(Math.Clamp(_note.Zoom + (ev.Delta > 0 ? 0.1 : -0.1), 0.7, 2.0), 2);
+                tb.LayoutTransform = Math.Abs(_note.Zoom - 1.0) < 0.01
+                    ? Transform.Identity
+                    : new ScaleTransform(_note.Zoom, _note.Zoom);
+                ev.Handled = true;
+            };
             BodyHost.Children.Clear();
             BodyHost.Children.Add(tb);
             tb.Focus();

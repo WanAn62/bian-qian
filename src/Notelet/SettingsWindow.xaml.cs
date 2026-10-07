@@ -53,6 +53,8 @@ public partial class SettingsWindow : Window
         AddHotkey("粘贴新建 / 粘贴截图", "Ctrl + V");
         AddHotkey("编辑 / 完成编辑", "双击 · Ctrl + Enter");
         AddHotkey("唤出主题美化", "主窗口调色板按钮");
+        AddHotkey("缩放便签字号", "Ctrl + 滚轮");
+        AddHotkey("提醒 / 撤销删除", "右键卡片 · 删除后可撤销");
     }
 
     void AddHotkey(string label, string keys)

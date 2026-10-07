@@ -25,6 +25,7 @@
         <local:NoteCardConverter x:Key="NoteConv"/>
         <local:ImgSourceConverter x:Key="ImgConv"/>
         <local:CollectionToVisibilityConverter x:Key="CollConv"/>
+        <local:StringToVisibilityConverter x:Key="StrVis"/>
 
         <!-- 卡片悬浮小按钮：悬停卡片时出现 -->
         <Style x:Key="CardBtn" TargetType="Button" BasedOn="{StaticResource IconBtn}">
@@ -214,6 +215,8 @@
                     <StackPanel DockPanel.Dock="Top" Margin="12,0,12,4">
                         <Button Content="＋ 新建便签" Style="{StaticResource AccentBtn}" Height="37"
                                 Click="NewBtn_Click" ToolTip="Ctrl+N"/>
+                        <Button Content="☐ 新建待办" Style="{StaticResource GhostBtn}" Height="34" Margin="0,8,0,0"
+                                Click="TodoBtn_Click" ToolTip="创建任务清单便签，回车自动续写"/>
                         <Button Content="快速便签" Style="{StaticResource GhostBtn}" Height="34" Margin="0,8,0,0"
                                 Click="QuickBtn_Click" ToolTip="Ctrl+Alt+Q，可多开"/>
                     </StackPanel>
@@ -405,14 +408,46 @@
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
+                                                <!-- 任务进度（Markdown 待办清单） -->
+                                                <StackPanel Margin="0,8,0,0"
+                                                            Visibility="{Binding TaskProgress, Converter={StaticResource StrVis}}">
+                                                    <Grid>
+                                                        <TextBlock Text="{Binding TaskProgress, StringFormat=☑ {0} 已完成}"
+                                                                   FontSize="10.5" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource Accent.Brush}"/>
+                                                        <TextBlock Text="{Binding TaskPercent, StringFormat={}{0}%}"
+                                                                   FontSize="10.5" Foreground="{DynamicResource Sub.Brush}"
+                                                                   HorizontalAlignment="Right"/>
+                                                    </Grid>
+                                                    <ProgressBar Height="3" Margin="0,4,0,0" Minimum="0" Maximum="100"
+                                                                 Value="{Binding TaskPercent, Mode=OneWay}"
+                                                                 Foreground="{DynamicResource Accent.Brush}">
+                                                        <ProgressBar.Template>
+                                                            <ControlTemplate TargetType="ProgressBar">
+                                                                <Grid>
+                                                                    <Border Background="{DynamicResource Field.Brush}" CornerRadius="2"/>
+                                                                    <Border x:Name="PART_Track"/>
+                                                                    <Border x:Name="PART_Indicator" Background="{DynamicResource Accent.Brush}"
+                                                                            CornerRadius="2" HorizontalAlignment="Left"/>
+                                                                </Grid>
+                                                            </ControlTemplate>
+                                                        </ProgressBar.Template>
+                                                    </ProgressBar>
+                                                </StackPanel>
                                                 <Grid Margin="0,10,0,0">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBlock Text="{Binding UpdatedAt, StringFormat=yyyy/MM/dd HH:mm}" FontSize="11"
-                                                               VerticalAlignment="Center"
-                                                               Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=sub}"/>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding UpdatedAt, StringFormat=yyyy/MM/dd HH:mm}" FontSize="11"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=sub}"/>
+                                                        <TextBlock Text="{Binding RemindText}" FontSize="11" Margin="8,0,0,0"
+                                                                   VerticalAlignment="Center"
+                                                                   Visibility="{Binding RemindText, Converter={StaticResource StrVis}}"
+                                                                   Foreground="{DynamicResource Accent.Brush}"/>
+                                                    </StackPanel>
                                                     <StackPanel x:Name="NormalOps" Grid.Column="1" Orientation="Horizontal">
                                                         <Button Content="MD" FontFamily="Microsoft YaHei UI" Click="MdBtn_Click" ToolTip="以 Markdown 渲染">
                                                             <Button.Style>
@@ -470,9 +505,10 @@
                                                              MinHeight="110" MaxHeight="430" VerticalScrollBarVisibility="Auto"
                                                              FontSize="{DynamicResource BaseFontSize.Double}"
                                                              Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}"
-                                                             CaretBrush="{DynamicResource Accent.Brush}"
-                                                             SelectionBrush="{DynamicResource Accent.Brush}"
-                                                             KeyDown="Editor_KeyDown">
+                                                         CaretBrush="{DynamicResource Accent.Brush}"
+                                                         SelectionBrush="{DynamicResource Accent.Brush}"
+                                                         PreviewMouseWheel="NoteEditor_PreviewMouseWheel"
+                                                         KeyDown="Editor_KeyDown">
                                                         <TextBox.Style>
                                                             <Style TargetType="TextBox">
                                                                 <Style.Triggers>
@@ -488,6 +524,7 @@
                                                                  BorderThickness="0" Background="Transparent" Padding="0"
                                                                  MinHeight="110" VerticalScrollBarVisibility="Auto"
                                                                  FontSize="{DynamicResource BaseFontSize.Double}"
+                                                                 PreviewMouseWheel="NoteEditor_PreviewMouseWheel"
                                                                  Foreground="{Binding ColorKey, Converter={StaticResource NoteConv}, ConverterParameter=fg}">
                                                         <RichTextBox.Style>
                                                             <Style TargetType="RichTextBox">
@@ -637,9 +674,20 @@
                                     Style="{StaticResource FlatBtn}" Padding="10,2" Click="ExitTrash_Click"/>
                         </StackPanel>
                     </Border>
+                    <!-- 撤销删除提示条 -->
+                    <Border x:Name="UndoToast" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                            Margin="18,0,0,10" Background="{DynamicResource Card.Brush}" BorderBrush="{DynamicResource Border.Brush}"
+                            BorderThickness="1" CornerRadius="10" Padding="14,7" Effect="{StaticResource CardHover.Shadow}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE74D;" FontFamily="{DynamicResource IconFont.FontFamily}" FontSize="12"
+                                       Foreground="{DynamicResource Sub.Brush}" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="UndoToastText" Text="已移入回收站" FontSize="12.5" Margin="8,0,0,0"
+                                       VerticalAlignment="Center"/>
+                            <Button Content="撤销" FontSize="12" Foreground="{DynamicResource Accent.Brush}"
+                                    Style="{StaticResource FlatBtn}" Padding="10,1" Margin="10,0,0,0" Click="UndoDelete_Click"/>
+                        </StackPanel>
+                    </Border>
                 </Grid>
-
-                <!-- 状态栏 -->
                 <Grid Grid.Row="2" Margin="18,0">
                     <StackPanel Orientation="Horizontal">
                         <Ellipse Width="6" Height="6" Fill="{DynamicResource Accent.Brush}" Opacity="0.9"

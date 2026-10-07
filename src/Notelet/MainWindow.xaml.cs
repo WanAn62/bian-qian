@@ -122,6 +122,11 @@ public partial class MainWindow : Window
 
         InitTray();
 
+        // 提醒轮询：每 20 秒检查一次到点便签
+        _reminderTimer.Tick += (_, __) => CheckReminders();
+        _reminderTimer.Start();
+        CheckReminders();
+
         StateChanged += (_, __) => UpdateMaxGlyph();
         Loaded += (_, __) => UpdateMaxGlyph();
 
@@ -255,6 +260,17 @@ public partial class MainWindow : Window
     }
 
     void QuickBtn_Click(object sender, RoutedEventArgs e) => NewQuickNote();
+
+    void TodoBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var n = new Note { ColorKey = NextColor(), IsMarkdown = true, Text = "- [ ] " };
+        n.IsEditing = true;
+        _repo.Items.Insert(0, n);
+        _repo.MarkDirty();
+        RefreshView();
+        CardsScroll.ScrollToTop();
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () => FocusEditor(n));
+    }
 
     // ───────────────────────── 图片便签 ─────────────────────────
 
@@ -451,7 +467,9 @@ public partial class MainWindow : Window
     {
         if (CardsList.ItemContainerGenerator.ContainerFromItem(n) is not ContentPresenter cp) return;
         var tb = FindDescendant<TextBox>(cp);
-        tb?.Focus();
+        if (tb is null) return;
+        ApplyZoom(tb, n);
+        tb.Focus();
         if (tb is not null) tb.CaretIndex = tb.Text.Length;
     }
 
@@ -483,6 +501,7 @@ public partial class MainWindow : Window
         n.Deleted = true;
         _repo.MarkDirty();
         RefreshView();
+        ShowUndoToast(n);
     }
 
     void RestoreBtn_Click(object s, RoutedEventArgs e)
@@ -703,6 +722,41 @@ public partial class MainWindow : Window
             EndEdit(n);
             e.Handled = true;
         }
+        else if (e.Key == Key.Enter && n.IsMarkdown && sender is TextBox box)
+        {
+            // Markdown 列表/任务清单：回车自动续写前缀
+            if (TryContinueList(box)) e.Handled = true;
+        }
+    }
+
+    /// <summary>Markdown 编辑：当前行是任务/列表行时，回车自动补同款前缀；空条目回车则退出清单。</summary>
+    bool TryContinueList(TextBox box)
+    {
+        var text = box.Text;
+        int caret = box.CaretIndex;
+        int lineStart = text.LastIndexOf('\n', Math.Max(caret - 1, 0)) + 1;
+        if (caret < lineStart) return false;
+        var line = text[lineStart..caret];
+
+        var m = System.Text.RegularExpressions.Regex.Match(line, @"^(\s*)([-*]\s\[[ xX]\]\s|[-*]\s|\d+[.、]\s)");
+        if (!m.Success) return false;
+
+        string indent = m.Groups[1].Value;
+        string marker = m.Groups[2].Value;
+        string content = line[(m.Length)..];
+
+        if (content.Trim().Length == 0)
+        {
+            // 空条目：回车不再续写，删除该行空标记（退出清单）
+            box.Text = text[..lineStart] + text[caret..];
+            box.CaretIndex = lineStart;
+            return true;
+        }
+
+        string next = marker.StartsWith("- [") ? "- [ ] " : marker;
+        box.Text = text[..caret] + "\n" + indent + next + text[caret..];
+        box.CaretIndex = caret + 1 + indent.Length + next.Length;
+        return true;
     }
 
     void Card_LostFocus(object sender, KeyboardFocusChangedEventArgs e)
@@ -783,6 +837,15 @@ public partial class MainWindow : Window
         }));
         stack.Children.Add(MenuItemBtn(popup, "磁贴速览", "\uE842", () => OpenTile(n)));
         stack.Children.Add(MenuItemBtn(popup, "复制全文", "\uE8C8", () => { try { Clipboard.SetText(n.Text); } catch { } }));
+        stack.Children.Add(MenuItemBtn(popup, n.RemindAt is null ? "设置提醒…" : "修改提醒…", "\uE823", () => ShowReminder(n)));
+        if (n.RemindAt is not null)
+            stack.Children.Add(MenuItemBtn(popup, "清除提醒", "\uE711", () =>
+            {
+                n.RemindAt = null;
+                n.Reminded = false;
+                _repo.MarkDirty();
+                RefreshView();
+            }));
         stack.Children.Add(MenuItemBtn(popup, "导出为图片…", "\uE8B9", () => ExportPng(n)));
         stack.Children.Add(MenuItemBtn(popup, n.IsMarkdown ? "导出为 .md…" : "导出为 .txt…", "\uE74E", () => ExportNoteFile(n)));
         stack.Children.Add(new Rectangle
@@ -797,6 +860,7 @@ public partial class MainWindow : Window
             n.Deleted = true;
             _repo.MarkDirty();
             RefreshView();
+            ShowUndoToast(n);
         }));
 
         popup.Child = new Border
@@ -1007,6 +1071,78 @@ public partial class MainWindow : Window
         return null;
     }
 
+    // ───────────────────────── 提醒 / 撤销删除 ─────────────────────────
+
+    void ShowReminder(Note n)
+        => new ReminderWindow(n, onChanged: () => { _repo.MarkDirty(); RefreshView(); }).Show();
+
+    Note? _undoNote;
+    readonly DispatcherTimer _undoTimer = new() { Interval = TimeSpan.FromSeconds(6) };
+
+    void ShowUndoToast(Note n)
+    {
+        _undoNote = n;
+        var t = n.Title;
+        UndoToastText.Text = $"「{(t.Length > 12 ? t[..12] + "…" : t)}」已移入回收站";
+        UndoToast.Visibility = Visibility.Visible;
+        _undoTimer.Stop();
+        _undoTimer.Start();
+    }
+
+    void UndoDelete_Click(object sender, RoutedEventArgs e)
+    {
+        if (_undoNote is { } n)
+        {
+            n.Deleted = false;
+            _repo.MarkDirty();
+            RefreshView();
+        }
+        _undoTimer.Stop();
+        UndoToast.Visibility = Visibility.Collapsed;
+        _undoNote = null;
+    }
+
+    readonly DispatcherTimer _reminderTimer = new() { Interval = TimeSpan.FromSeconds(20) };
+
+    void CheckReminders()
+    {
+        bool any = false;
+        foreach (var n in _repo.Items.Where(n => !n.Deleted && n.RemindAt is not null && !n.Reminded && n.RemindAt <= DateTime.Now))
+        {
+            n.Reminded = true;
+            any = true;
+            var title = n.Title.Length > 16 ? n.Title[..16] : n.Title;
+            try { _tray?.ShowBalloonTip(6000, $"便签提醒 · {title}", $"{n.RemindAt:HH:mm} 的提醒已到时间，快去看看吧", WinForms.ToolTipIcon.Info); }
+            catch { }
+        }
+        if (any)
+        {
+            _repo.MarkDirty();
+            RefreshView();
+        }
+    }
+
+    // ───────────────────────── 字号缩放（Ctrl+滚轮） ─────────────────────────
+
+    void NoteEditor_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) return;
+        if ((sender as FrameworkElement)?.DataContext is not Note n) return;
+        n.Zoom = Math.Round(Math.Clamp(n.Zoom + (e.Delta > 0 ? 0.1 : -0.1), 0.7, 2.0), 2);
+        ApplyZoom(sender as FrameworkElement, n);
+        _repo.MarkDirty();
+        e.Handled = true;
+    }
+
+    void ApplyZoom(FrameworkElement? fe, Note n)
+    {
+        if (fe is null) return;
+        fe.LayoutTransform = Math.Abs(n.Zoom - 1.0) < 0.01
+            ? Transform.Identity
+            : new ScaleTransform(n.Zoom, n.Zoom);
+        if (_previews.ContainsKey(n)) RebuildPreviewCurrent(n);
+    }
+
     void SetPreview(Note n, bool on)
     {
         if (_previews.Remove(n, out var old))
@@ -1034,7 +1170,7 @@ public partial class MainWindow : Window
         var sub = NoteCardConverter.SubBrushFor(n.ColorKey);
         var accent = (Brush)Application.Current.Resources["Accent.Brush"];
         var codeBg = (Brush)Application.Current.Resources["Field.Brush"];
-        var fs = (double)Application.Current.Resources["BaseFontSize.Double"];
+        var fs = (double)Application.Current.Resources["BaseFontSize.Double"] * n.Zoom;
         box.Document = Markdown.FlowDoc(n, fg, sub, accent, codeBg, codeBg, fs);
         _previews[n] = (_previews[n].Handler, box);
     }
