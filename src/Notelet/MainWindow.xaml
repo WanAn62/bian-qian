@@ -254,66 +254,75 @@
                 <Grid Grid.Row="0">
                     <Border VerticalAlignment="Bottom" Height="1" IsHitTestVisible="False"
                             Background="{DynamicResource Border.Brush}" Opacity="0.55"/>
-                    <Border Width="330" Height="32" HorizontalAlignment="Left" VerticalAlignment="Center"
-                            Margin="18,0,0,0"
-                            Background="{DynamicResource Field.Brush}"
-                            BorderThickness="1" CornerRadius="16"
-                            WindowChrome.IsHitTestVisibleInChrome="True">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="BorderBrush" Value="{DynamicResource Border.Brush}"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=SearchBox}" Value="True">
-                                        <Setter Property="BorderBrush" Value="{DynamicResource Accent.Brush}"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="&#xE721;" FontFamily="{DynamicResource IconFont.FontFamily}" FontSize="12"
-                                       Foreground="{DynamicResource Sub.Brush}" Margin="12,0,0,0" VerticalAlignment="Center"/>
-                            <TextBox x:Name="SearchBox" Grid.Column="1" BorderThickness="0" Background="Transparent"
-                                     VerticalContentAlignment="Center" Margin="8,0,0,0" FontSize="13"
-                                     Foreground="{DynamicResource Text.Brush}" CaretBrush="{DynamicResource Accent.Brush}"
-                                     TextChanged="SearchBox_TextChanged"/>
-                            <TextBlock Grid.Column="1" Text="搜索便签（Ctrl+K）" FontSize="13"
-                                       Foreground="{DynamicResource Sub.Brush}" Margin="9,0,0,0"
-                                       VerticalAlignment="Center" IsHitTestVisible="False">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="18"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <!-- 搜索容器：窄窗收缩、宽窗居中（最宽 330） -->
+                        <Border Grid.Column="1" VerticalAlignment="Center">
+                            <Border Height="32" MaxWidth="330" HorizontalAlignment="Center"
+                                    Background="{DynamicResource Field.Brush}"
+                                    BorderThickness="1" CornerRadius="16"
+                                    WindowChrome.IsHitTestVisibleInChrome="True">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource Border.Brush}"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
-                                                <Setter Property="Visibility" Value="Visible"/>
+                                            <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=SearchBox}" Value="True">
+                                                <Setter Property="BorderBrush" Value="{DynamicResource Accent.Brush}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <Button x:Name="ClearSearchBtn" Grid.Column="2" Content="&#xE711;" FontSize="10"
-                                    Style="{StaticResource IconBtn}" Width="24" Height="24" Margin="0,0,5,0"
-                                    Visibility="Collapsed" Click="ClearSearch_Click"/>
-                        </Grid>
-                    </Border>
+                                </Border.Style>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="&#xE721;" FontFamily="{DynamicResource IconFont.FontFamily}" FontSize="12"
+                                               Foreground="{DynamicResource Sub.Brush}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="SearchBox" Grid.Column="1" BorderThickness="0" Background="Transparent"
+                                             VerticalContentAlignment="Center" Margin="8,0,0,0" FontSize="13" MinWidth="120"
+                                             Foreground="{DynamicResource Text.Brush}" CaretBrush="{DynamicResource Accent.Brush}"
+                                             TextChanged="SearchBox_TextChanged"/>
+                                    <TextBlock Grid.Column="1" Text="搜索便签（Ctrl+K）" FontSize="13"
+                                               Foreground="{DynamicResource Sub.Brush}" Margin="9,0,0,0"
+                                               VerticalAlignment="Center" IsHitTestVisible="False">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <Button x:Name="ClearSearchBtn" Grid.Column="2" Content="&#xE711;" FontSize="10"
+                                            Style="{StaticResource IconBtn}" Width="24" Height="24" Margin="0,0,5,0"
+                                            Visibility="Collapsed" Click="ClearSearch_Click"/>
+                                </Grid>
+                            </Border>
+                        </Border>
 
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                Margin="0,0,10,0"
-                                WindowChrome.IsHitTestVisibleInChrome="True">
-                        <Button x:Name="ThemeBtn" Content="&#xE790;" Style="{StaticResource IconBtn}"
-                                Click="ThemeBtn_Click" ToolTip="美化"/>
-                        <ToggleButton x:Name="PinWinBtn" Content="&#xE718;" Style="{StaticResource IconToggle}"
-                                      Click="PinWinBtn_Click" ToolTip="窗口置顶"/>
-                        <Border Width="1" Height="18" Background="{DynamicResource Border.Brush}" Margin="7,0"/>
-                        <Button Content="&#xE921;" Style="{StaticResource IconBtn}" Click="MinBtn_Click" ToolTip="最小化"/>
-                        <Button x:Name="MaxBtn" Content="&#xE922;" Style="{StaticResource IconBtn}"
-                                Click="MaxBtn_Click" ToolTip="最大化 / 还原（双击标题栏）"/>
-                        <Button Content="&#xE8BB;" Style="{StaticResource CloseBtn}" Click="CloseBtn_Click" ToolTip="关闭"/>
-                    </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center"
+                                    Margin="12,0,10,0"
+                                    WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Button x:Name="ThemeBtn" Content="&#xE790;" Style="{StaticResource IconBtn}"
+                                    Click="ThemeBtn_Click" ToolTip="美化"/>
+                            <ToggleButton x:Name="PinWinBtn" Content="&#xE718;" Style="{StaticResource IconToggle}"
+                                          Click="PinWinBtn_Click" ToolTip="窗口置顶"/>
+                            <Border Width="1" Height="18" Background="{DynamicResource Border.Brush}" Margin="7,0"/>
+                            <Button Content="&#xE921;" Style="{StaticResource IconBtn}" Click="MinBtn_Click" ToolTip="最小化"/>
+                            <Button x:Name="MaxBtn" Content="&#xE922;" Style="{StaticResource IconBtn}"
+                                    Click="MaxBtn_Click" ToolTip="最大化 / 还原（双击标题栏）"/>
+                            <Button Content="&#xE8BB;" Style="{StaticResource CloseBtn}" Click="CloseBtn_Click" ToolTip="关闭"/>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
 
                 <!-- 卡片区 -->
